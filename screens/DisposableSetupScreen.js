@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 
 export default function DisposableSetupScreen({ route, navigation }) {
-  const { activeCategories, isGuest } = route.params;
+  const { activeCategories, isGuest, currency } = route.params;
 
   const [disposableIncome, setDisposableIncome] = useState('');
   const [paymentDay, setPaymentDay] = useState('');
@@ -37,6 +37,7 @@ export default function DisposableSetupScreen({ route, navigation }) {
       paymentDay: parseInt(paymentDay, 10),
       activeCategories, // Pass categories along
       isGuest,
+      currency,
     });
   };
 
@@ -52,8 +53,8 @@ export default function DisposableSetupScreen({ route, navigation }) {
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Total Disposable Income</Text>
           <TextInput
-            style={styles.input}
-            placeholder="$0.00"
+            style={[styles.input, { fontSize: 24 }]}
+            placeholder={`${currency.symbol}0.00`}
             keyboardType="numeric"
             value={disposableIncome}
             onChangeText={handleIncomeChange}
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
   input: {
     borderBottomWidth: 2,
     borderBottomColor: '#000000',
-    fontSize: 24,
+    fontSize: 18,
     paddingVertical: 10,
   },
   footer: {

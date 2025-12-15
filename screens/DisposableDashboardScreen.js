@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
-  const { budget } = route.params;
+  const { budget: initialBudget } = route.params;
+  const [budget, setBudget] = useState(initialBudget); // Allow budget to be updated with expenses
   const [currentWeek, setCurrentWeek] = useState(1);
   const [currentDay, setCurrentDay] = useState(1);
   const [expenses, setExpenses] = useState([]);
@@ -21,6 +22,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         oneOffSpendsForView: [],
         savingsForView: 0,
         isSavingsNegative: false,
+        currency: budget.currency || { symbol: '$', code: 'USD' },
       };
     }
 
@@ -88,6 +90,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         oneOffSpendsForView: oneOffSpendsForDay,
         savingsForView: finalDailySavings,
         isSavingsNegative: finalDailySavings < 0,
+        currency: budget.currency || { symbol: '$', code: 'USD' },
       };
     }
 
@@ -146,6 +149,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         oneOffSpendsForView: oneOffSpendsForWeek,
         savingsForView: finalWeeklySavings,
         isSavingsNegative: finalWeeklySavings < 0,
+        currency: budget.currency || { symbol: '$', code: 'USD' },
       };
     }
 
@@ -159,6 +163,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       oneOffSpendsForView: [],
       savingsForView: 0,
       isSavingsNegative: false,
+      currency: budget.currency || { symbol: '$', code: 'USD' },
     };
   }, [budget, currentDay, currentWeek, expenses]);
 
@@ -228,13 +233,13 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     <View style={styles.container}>
       <View style={styles.summaryContainer}>
         <Text style={styles.label}>{budgetDetails.label}</Text>
-        <Text style={[styles.amount, { color: budgetDetails.amount > 0 ? '#32CD32' : '#555' }]}>${budgetDetails.amount.toFixed(2)}</Text>
+        <Text style={[styles.amount, { color: budgetDetails.amount > 0 ? '#32CD32' : '#555' }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</Text>
         <Text style={styles.subAmount}>Remaining</Text>
 
         {budget.savingsGoal > 0 && (
           <View style={styles.savingsDisplay}>
             <Text style={styles.savingsLabel}>Savings This Period</Text>
-            <Text style={[styles.savingsAmount, { color: budgetDetails.isSavingsNegative ? '#FF4136' : '#007AFF' }]}>${budgetDetails.savingsForView.toFixed(2)}</Text>
+            <Text style={[styles.savingsAmount, { color: budgetDetails.isSavingsNegative ? '#FF4136' : '#007AFF' }]}>{budgetDetails.currency.symbol}{budgetDetails.savingsForView.toFixed(2)}</Text>
           </View>
         )}
 
@@ -270,14 +275,14 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         {budgetDetails.recurringSpendsForView.map((spend, index) => (
           <View key={index} style={styles.expenseRow}>
             <Text style={styles.expenseDescription}>{spend.description}</Text>
-            <Text style={styles.expenseAmount}>-${spend.amount.toFixed(2)}</Text>
+            <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{spend.amount.toFixed(2)}</Text>
           </View>
         ))}
 
         {budgetDetails.oneOffSpendsForView.map((expense) => (
           <View key={expense.id} style={styles.expenseRow}>
             <Text style={styles.expenseDescription}>{expense.description}</Text>
-            <Text style={styles.expenseAmount}>-${expense.amount.toFixed(2)}</Text>
+            <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{expense.amount.toFixed(2)}</Text>
           </View>
         ))}
 
@@ -299,7 +304,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
             <Text style={styles.modalHeader}>Add Expense</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Amount ($)"
+              placeholder={`Amount (${budgetDetails.currency.symbol})`}
               keyboardType="numeric"
               value={newExpense.amount}
               onChangeText={(text) => setNewExpense({ ...newExpense, amount: text })}

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput,
 import { saveToStorage } from '../services/storage';
 
 export default function LeftoverBudgetScreen({ route, navigation }) {
-  const { unallocated, paymentDay, activeCategories, isGuest } = route.params;
+  const { unallocated, paymentDay, activeCategories, isGuest, currency } = route.params;
   const [view, setView] = useState(null); // 'daily' or 'weekly'
   const [isCustomizeModalVisible, setCustomizeModalVisible] = useState(false);
   const [isSavingsModalVisible, setSavingsModalVisible] = useState(false);
@@ -108,6 +108,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
       dailyBudgets: view === 'daily' && hasCustomized ? dailyBudgets.map(b => parseFloat(b) || 0) : undefined,
       weeklyBudgets: view === 'weekly' && hasCustomized ? weeklyBudgets.map(b => parseFloat(b) || 0) : undefined,
     };
+    budgetData.currency = currency;
 
     if (!isGuest) {
       await saveToStorage('userBudget', budgetData);
@@ -120,6 +121,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
       budget: budgetData,
       activeCategories,
       isGuest,
+      currency,
     });
   };
 
@@ -139,16 +141,16 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
 
         <View style={styles.leftoverContainer}>
           <Text style={styles.leftoverLabel}>Money Left Over</Text>
-          <Text style={styles.leftoverAmount}>${unallocated.toFixed(2)}</Text>
+          <Text style={styles.leftoverAmount}>{currency.symbol}{unallocated.toFixed(2)}</Text>
           <Text style={styles.remainingText}>for the next {daysLeft} days</Text>
         </View>
 
         <TouchableOpacity style={styles.savingsButton} onPress={() => setSavingsModalVisible(true)}>
           <Text style={styles.savingsButtonText}>
-            {savingsAmount > 0 ? `Edit Savings Goal ($${savingsAmount.toFixed(2)})` : 'Set a Savings Goal'}
+            {savingsAmount > 0 ? `Edit Savings Goal (${currency.symbol}${savingsAmount.toFixed(2)})` : 'Set a Savings Goal'}
           </Text>
         </TouchableOpacity>
-        <Text style={styles.subHeader}>Spendable: <Text style={styles.bold}>${spendableUnallocated.toFixed(2)}</Text></Text>
+        <Text style={styles.subHeader}>Spendable: <Text style={styles.bold}>{currency.symbol}{spendableUnallocated.toFixed(2)}</Text></Text>
 
         <View style={styles.optionsContainer}>
           <TouchableOpacity
@@ -169,9 +171,9 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
           <View style={styles.resultContainer}>
             <View style={styles.resultRow}>
               <Text style={styles.resultLabel}>Daily Fun Money:</Text>
-              <Text style={styles.resultAmount}>${dailyAverage.toFixed(2)}</Text>
+              <Text style={styles.resultAmount}>{currency.symbol}{dailyAverage.toFixed(2)}</Text>
               <Text style={styles.resultLabel}>Daily Savings:</Text>
-              <Text style={[styles.resultAmount, { color: '#007AFF' }]}>${dailySavings.toFixed(2)}</Text>
+              <Text style={[styles.resultAmount, { color: '#007AFF' }]}>{currency.symbol}{dailySavings.toFixed(2)}</Text>
             </View>
             <TouchableOpacity style={styles.customizeButton} onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }}>
               <Text style={styles.customizeButtonText}>Customize Allocation</Text>
@@ -183,9 +185,9 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
           <View style={styles.resultContainer}>
             <View style={styles.resultRow}>
               <Text style={styles.resultLabel}>Weekly Fun Money:</Text>
-              <Text style={styles.resultAmount}>${weeklyAverage.toFixed(2)}</Text>
+              <Text style={styles.resultAmount}>{currency.symbol}{weeklyAverage.toFixed(2)}</Text>
               <Text style={styles.resultLabel}>Weekly Savings:</Text>
-              <Text style={[styles.resultAmount, { color: '#007AFF' }]}>${weeklySavings.toFixed(2)}</Text>
+              <Text style={[styles.resultAmount, { color: '#007AFF' }]}>{currency.symbol}{weeklySavings.toFixed(2)}</Text>
             </View>
             <TouchableOpacity style={styles.customizeButton} onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }}>
               <Text style={styles.customizeButtonText}>Customize Allocation</Text>
@@ -205,9 +207,9 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <Text style={styles.header}>Customize Budget</Text>
             <View style={styles.allocationSummary}>
-              <Text style={styles.summaryText}>Allocated: ${allocatedSum.toFixed(2)}</Text>
+              <Text style={styles.summaryText}>Allocated: {currency.symbol}{allocatedSum.toFixed(2)}</Text>
               <Text style={[styles.summaryText, { color: remainingToAllocate < 0 ? '#FF4136' : '#555' }]}>
-                Remaining: ${remainingToAllocate.toFixed(2)}
+                Remaining: {currency.symbol}{remainingToAllocate.toFixed(2)}
               </Text>
             </View>
 
@@ -216,7 +218,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
                 <Text style={styles.inputLabel}>{formatDateForDay(index)}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="$0.00"
+                  placeholder={`${currency.symbol}0.00`}
                   keyboardType="numeric"
                   value={budget}
                   onChangeText={(text) => handleBudgetChange(index, text)}
@@ -229,7 +231,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
                 <Text style={styles.inputLabel}>Week {index + 1}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="$0.00"
+                  placeholder={`${currency.symbol}0.00`}
                   keyboardType="numeric"
                   value={budget}
                   onChangeText={(text) => handleBudgetChange(index, text)}
@@ -256,7 +258,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
             <Text style={styles.modalHeader}>Set Savings Goal</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="$0.00"
+              placeholder={`${currency.symbol}0.00`}
               keyboardType="numeric"
               value={savingsGoal}
               onChangeText={handleSavingsChange}

@@ -16,12 +16,13 @@ export default function DashboardScreen({ route, navigation }) {
       setIsGuest(session?.isGuest || true);
 
       // For guest mode, data is passed via params. Otherwise, load from storage.
-      if (route.params?.budgetData) {
+      if (route.params?.isGuest) {
         setBudgetData(route.params.budgetData);
         // Categories aren't passed in guest mode for this flow, so we don't set them.
       } else {
         const data = await loadFromStorage('userBudget');
         const cats = await loadFromStorage('userCategories');
+        console.log('Loaded budget data:', data);
         setBudgetData(data);
         setCategories(cats);
       }
@@ -63,6 +64,8 @@ export default function DashboardScreen({ route, navigation }) {
   const totalBudget = budgetData ? budgetData.totalBudget : 0;
   const unallocated = totalBudget - allocated;
 
+  const currency = budgetData?.currency || { symbol: '$', code: 'USD' };
+
   const statusColor = {
     green: '#32CD32', // Intense Green
     yellow: '#FFD700', // Intense Yellow
@@ -82,9 +85,9 @@ export default function DashboardScreen({ route, navigation }) {
       <View style={styles.summaryContainer}>
         <Text style={styles.label}>Money Left Over</Text>
         <Text style={[styles.amount, { color: statusColor[budgetStatus] }]}>
-          ${unallocated.toFixed(2)}
+          {currency.symbol}{unallocated.toFixed(2)}
         </Text>
-        <Text style={styles.subAmount}>out of ${totalBudget.toFixed(2)} total budget</Text>
+        <Text style={styles.subAmount}>out of {currency.symbol}{totalBudget.toFixed(2)} total budget</Text>
         <Text style={styles.daysLeft}>{daysLeft} Days Left in Period</Text>
       </View>
 
@@ -94,19 +97,19 @@ export default function DashboardScreen({ route, navigation }) {
           <View key={name} style={styles.categoryRow}>
             <Text style={styles.categoryName}>{name}</Text>
             {/* TODO: Subtract expenses from amount */}
-            <Text style={styles.categoryAmount}>${amount.toFixed(2)}</Text>
+            <Text style={styles.categoryAmount}>{currency.symbol}{amount.toFixed(2)}</Text>
           </View>
         ))}
          {unallocated < 0 && (
           <View style={styles.categoryRow}>
             <Text style={[styles.categoryName, {color: statusColor.red}]}>Over-allocated</Text>
-            <Text style={[styles.categoryAmount, {color: statusColor.red}]}>-${Math.abs(unallocated).toFixed(2)}</Text>
+            <Text style={[styles.categoryAmount, {color: statusColor.red}]}>-{currency.symbol}{Math.abs(unallocated).toFixed(2)}</Text>
           </View>
         )}
       </ScrollView>
 
       {unallocated > 0 && (
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeftoverBudget', { unallocated, daysLeft, paymentDay: budgetData.paymentDay, activeCategories: categories, isGuest })}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeftoverBudget', { unallocated, paymentDay: budgetData.paymentDay, activeCategories: categories, isGuest, currency })}>
           <Text style={styles.buttonText}>Budget Leftover Money</Text>
         </TouchableOpacity>
       )}

@@ -7,7 +7,7 @@ import { saveToStorage } from '../services/storage';
 const dayShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function RecurringSpendsScreen({ route, navigation }) {
-  const { budget, activeCategories, isGuest } = route.params;
+  const { budget, activeCategories, isGuest, currency } = route.params;
   const [recurringSpends, setRecurringSpends] = useState([]);
 
   const daysInPeriod = useMemo(() => {
@@ -93,7 +93,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
       />
       <TextInput
         style={styles.input}
-        placeholder="Amount ($)"
+        placeholder={`Amount (${currency.symbol})`}
         keyboardType="numeric"
         value={spend.amount}
         onChangeText={(text) => updateSpend(index, 'amount', text)}

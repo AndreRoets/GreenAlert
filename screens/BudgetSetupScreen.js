@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Keyboa
 import { saveToStorage } from '../services/storage';
 
 export default function BudgetSetupScreen({ route, navigation }) {
-  const { activeCategories, isGuest } = route.params;
+  const { activeCategories, isGuest, currency } = route.params;
 
   const [totalBudget, setTotalBudget] = useState('');
   const [paymentDay, setPaymentDay] = useState('');
@@ -49,6 +49,7 @@ export default function BudgetSetupScreen({ route, navigation }) {
       totalBudget: total,
       paymentDay: parseInt(paymentDay, 10),
       categoryBudgets: Object.entries(categoryBudgets).reduce((acc, [key, value]) => ({ ...acc, [key]: parseFloat(value) || 0 }), {}),
+      currency: currency,
     };
 
     if (!isGuest) {
@@ -56,7 +57,7 @@ export default function BudgetSetupScreen({ route, navigation }) {
       await saveToStorage('userCategories', activeCategories);
       await saveToStorage('hasCompletedOnboarding', true);
     }
-    navigation.navigate('Dashboard', { budgetData }); // Pass data for guest mode
+    navigation.navigate('Dashboard', { budgetData, isGuest }); // Pass data for guest mode
   };
 
   return (
@@ -72,13 +73,13 @@ export default function BudgetSetupScreen({ route, navigation }) {
           <Text style={styles.totalLabel}>Total Budget Amount</Text>
           <TextInput
             style={styles.totalInput}
-            placeholder="$0.00"
+            placeholder={`${currency.symbol}0.00`}
             keyboardType="numeric"
             value={totalBudget}
             onChangeText={handleTotalBudgetChange}
           />
           <Text style={[styles.remainingText, { color: remaining < 0 ? '#FF4136' : '#32CD32' }]}>
-            Remaining: ${remaining.toFixed(2)}
+            Remaining: {currency.symbol}{remaining.toFixed(2)}
           </Text>
         </View>
 
@@ -99,7 +100,7 @@ export default function BudgetSetupScreen({ route, navigation }) {
             <Text style={styles.categoryText}>{category}</Text>
             <TextInput
               style={styles.categoryInput}
-              placeholder="$0.00"
+              placeholder={`${currency.symbol}0.00`}
               keyboardType="numeric"
               value={categoryBudgets[category]}
               onChangeText={(text) => handleCategoryChange(category, text)}

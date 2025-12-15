@@ -4,18 +4,19 @@ import { saveToStorage } from '../services/storage'; // Assuming this service ex
 import { disposableCategories } from './CategorySetupScreen';
 
 export default function OnboardingScreen({ navigation, route }) {
-  const handleChoice = async (choice, isGuest) => {
+  const { isGuest, currency } = route.params;
+  const handleChoice = async (choice) => {
     await saveToStorage('userBudgetPreference', choice);
 
     if (choice === 'disposable') {
       // For disposable income, we skip category selection and use a default set.
       navigation.navigate('DisposableSetup', {
         activeCategories: disposableCategories,
-        isGuest,
+        isGuest, currency
       });
     } else {
       // For the entire budget, the user needs to select categories.
-      navigation.navigate('CategorySetup', { budgetPreference: choice, isGuest });
+      navigation.navigate('CategorySetup', { budgetPreference: choice, isGuest, currency });
     }
   };
 
@@ -25,11 +26,11 @@ export default function OnboardingScreen({ navigation, route }) {
       <Text style={styles.subHeader}>Brutally honest, but motivating.</Text>
       <Text style={styles.body}>Let’s get real about your spending. How do you want to track your budget?</Text>
       
-      <TouchableOpacity style={styles.button} onPress={() => handleChoice('entire', route.params?.isGuest)}>
+      <TouchableOpacity style={styles.button} onPress={() => handleChoice('entire')}>
         <Text style={styles.buttonText}>Track Entire Budget</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={styles.button} onPress={() => handleChoice('disposable', route.params?.isGuest)}>
+      <TouchableOpacity style={styles.button} onPress={() => handleChoice('disposable')}>
         <Text style={styles.buttonText}>Track Disposable Income Only</Text>
       </TouchableOpacity>
     </View>

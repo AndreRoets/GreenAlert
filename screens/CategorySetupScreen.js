@@ -12,7 +12,7 @@ export const disposableCategories = [
 ];
 
 export default function CategorySetupScreen({ route, navigation }) {
-  const { budgetPreference, isGuest } = route.params;
+  const { budgetPreference, isGuest, currency } = route.params;
   const [categories, setCategories] = useState({});
 
   useEffect(() => {
@@ -36,9 +36,9 @@ export default function CategorySetupScreen({ route, navigation }) {
     }
     if (budgetPreference === 'entire') {
       // Navigate to the next step to set budget amounts for these categories
-      navigation.navigate('BudgetSetup', { activeCategories, isGuest });
+      navigation.navigate('BudgetSetup', { activeCategories, isGuest, currency });
     } else {
-      navigation.navigate('DisposableSetup', { activeCategories, isGuest });
+      navigation.navigate('DisposableSetup', { activeCategories, isGuest, currency });
     }
   };
 
