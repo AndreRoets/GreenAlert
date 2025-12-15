@@ -1,12 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
   const { budget: initialBudget } = route.params;
   const [budget, setBudget] = useState(initialBudget); // Allow budget to be updated with expenses
+  const [adjustedBudgets, setAdjustedBudgets] = useState(initialBudget.dailyBudgets || initialBudget.weeklyBudgets || []); // Store the *allocated* budgets, potentially adjusted for past overspends. Ensure it's always an array.
   const [currentWeek, setCurrentWeek] = useState(1);
   const [currentDay, setCurrentDay] = useState(1);
   const [expenses, setExpenses] = useState([]);
+  const [lastProcessedExpenseCount, setLastProcessedExpenseCount] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
   const [newExpense, setNewExpense] = useState({ amount: '', description: '' });
 
@@ -69,17 +71,18 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const totalSpends = recurringTotal + oneOffTotal;
 
       let dayFunMoneyBudget;
-      if (budget.dailyBudgets && budget.dailyBudgets.length > 0) {
-        dayFunMoneyBudget = budget.dailyBudgets[currentDay - 1] || 0;
+      const currentBudgets = adjustedBudgets || budget.dailyBudgets;
+      if (currentBudgets && currentBudgets.length > 0) {
+        dayFunMoneyBudget = currentBudgets[currentDay - 1] || 0;
       } else {
         dayFunMoneyBudget = daysLeft > 0 ? spendableTotal / daysLeft : 0;
       }
-
+      
       const dailySavingsBudget = daysLeft > 0 ? totalSavings / daysLeft : 0;
       const funMoneyRemaining = dayFunMoneyBudget - totalSpends;
-      const overspentAmount = funMoneyRemaining < 0 ? Math.abs(funMoneyRemaining) : 0;
-
-      const finalFunMoney = Math.max(0, funMoneyRemaining);
+      
+      const finalFunMoney = funMoneyRemaining; // This is the value to display as remaining fun money
+      const overspentAmount = finalFunMoney < 0 ? Math.abs(finalFunMoney) : 0;
       const finalDailySavings = dailySavingsBudget - overspentAmount;
 
       return {
@@ -93,6 +96,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         savingsForView: finalDailySavings,
         isSavingsNegative: finalDailySavings < 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
+        overspentAmount: overspentAmount,
       };
     }
 
@@ -128,17 +132,18 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const totalSpends = recurringTotal + oneOffTotal;
 
       let weekFunMoneyBudget;
-      if (budget.weeklyBudgets && budget.weeklyBudgets.length > 0) {
-        weekFunMoneyBudget = budget.weeklyBudgets[currentWeek - 1] || 0;
+      const currentBudgets = adjustedBudgets || budget.weeklyBudgets;
+      if (currentBudgets && currentBudgets.length > 0) {
+        weekFunMoneyBudget = currentBudgets[currentWeek - 1] || 0;
       } else {
         weekFunMoneyBudget = weeksLeft > 0 ? spendableTotal / weeksLeft : 0;
       }
 
       const weeklySavingsBudget = weeksLeft > 0 ? totalSavings / weeksLeft : 0;
       const funMoneyRemaining = weekFunMoneyBudget - totalSpends;
-      const overspentAmount = funMoneyRemaining < 0 ? Math.abs(funMoneyRemaining) : 0;
 
-      const finalFunMoney = Math.max(0, funMoneyRemaining);
+      const finalFunMoney = funMoneyRemaining; // This is the value to display as remaining fun money
+      const overspentAmount = finalFunMoney < 0 ? Math.abs(finalFunMoney) : 0;
       const finalWeeklySavings = weeklySavingsBudget - overspentAmount;
 
       return {
@@ -152,6 +157,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         savingsForView: finalWeeklySavings,
         isSavingsNegative: finalWeeklySavings < 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
+        overspentAmount: overspentAmount,
       };
     }
 
@@ -166,8 +172,59 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       savingsForView: 0,
       isSavingsNegative: false,
       currency: budget.currency || { symbol: '$', code: 'USD' },
+      overspentAmount: 0,
     };
-  }, [budget, currentDay, currentWeek, expenses]);
+  }, [budget, adjustedBudgets, currentDay, currentWeek, expenses]);
+
+  // This useEffect applies overspend deductions to *future* periods.
+  // It only runs when new expenses are added to prevent infinite loops.
+  useEffect(() => {
+    if (expenses.length <= lastProcessedExpenseCount) return; // Only process if new expenses have been added
+    const { overspentAmount, isDaily, isWeekly, daysLeft, weeksLeft } = budgetDetails;
+
+    if (overspentAmount > 0) {
+      Alert.alert(
+        "Budget Overspent",
+        `You've overspent by ${budgetDetails.currency.symbol}${overspentAmount.toFixed(2)}. This will be deducted from your future budgets.`
+      );
+
+      let newAdjustedBudgets = [...adjustedBudgets]; // Create a mutable copy of the current adjusted budgets
+
+      // If newAdjustedBudgets is empty, it means no custom budgets were set initially,
+      // so we need to populate it with average values for the entire period before applying deductions.
+      if (newAdjustedBudgets.length === 0) {
+          const spendableTotal = budget.total - (budget.savingsGoal || 0);
+          if (isDaily && daysLeft > 0) {
+              const dailyAverage = spendableTotal / daysLeft;
+              for (let i = 0; i < daysLeft; i++) newAdjustedBudgets.push(dailyAverage);
+          } else if (isWeekly && weeksLeft > 0) {
+              const weeklyAverage = spendableTotal / weeksLeft;
+              for (let i = 0; i < weeksLeft; i++) newAdjustedBudgets.push(weeklyAverage);
+          }
+      }
+      
+      if (isDaily) {
+        const remainingDaysForDeduction = newAdjustedBudgets.length - currentDay; // Days *after* the current day
+        if (remainingDaysForDeduction > 0) {
+          const deductionPerDay = overspentAmount / remainingDaysForDeduction;
+          for (let i = currentDay; i < newAdjustedBudgets.length; i++) { // Start from the *next* day (index `currentDay`)
+            newAdjustedBudgets[i] = Math.max(0, (newAdjustedBudgets[i] || 0) - deductionPerDay);
+          }
+        }
+      } else if (isWeekly) {
+        const remainingWeeksForDeduction = newAdjustedBudgets.length - currentWeek; // Weeks *after* the current week
+        if (remainingWeeksForDeduction > 0) {
+          const deductionPerWeek = overspentAmount / remainingWeeksForDeduction;
+          for (let i = currentWeek; i < newAdjustedBudgets.length; i++) { // Start from the *next* week (index `currentWeek`)
+            newAdjustedBudgets[i] = Math.max(0, (newAdjustedBudgets[i] || 0) - deductionPerWeek);
+          }
+        }
+      }
+
+      setAdjustedBudgets(newAdjustedBudgets);
+    }
+    setLastProcessedExpenseCount(expenses.length);
+  }, [expenses, budgetDetails.overspentAmount, budgetDetails.isDaily, budgetDetails.isWeekly, budgetDetails.daysLeft, budgetDetails.weeksLeft, budgetDetails.currency, budget.total, budget.savingsGoal, currentDay, currentWeek, adjustedBudgets, lastProcessedExpenseCount]);
 
   const handleNextWeek = () => currentWeek < budgetDetails.weeksLeft && setCurrentWeek(currentWeek + 1);
   const handlePrevWeek = () => currentWeek > 1 && setCurrentWeek(currentWeek - 1);
@@ -244,7 +301,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     <View style={styles.container}>
       <View style={styles.summaryContainer}>
         <Text style={styles.label}>{budgetDetails.label}</Text>
-        <Text style={[styles.amount, { color: budgetDetails.amount > 0 ? '#32CD32' : '#555' }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</Text>
+        <Text style={[styles.amount, { color: budgetDetails.amount >= 0 ? '#32CD32' : '#FF4136' }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</Text>
         <Text style={styles.subAmount}>Remaining</Text>
 
         {budget.savingsGoal > 0 && (
