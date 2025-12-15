@@ -31,14 +31,16 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const currentDay = today.getDate();
       let periodEndDate;
       if (currentDay < budget.paymentDay) {
-        periodEndDate = new Date(today.getFullYear(), today.getMonth(), budget.paymentDay - 1);
+        periodEndDate = new Date(today.getFullYear(), today.getMonth(), budget.paymentDay);
       } else {
         const nextMonth = new Date(today);
         nextMonth.setMonth(today.getMonth() + 1);
-        periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), budget.paymentDay - 1);
+        periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), budget.paymentDay);
       }
+      // Set time to the end of the day to include the last day fully
+      periodEndDate.setHours(23, 59, 59, 999);
       const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());
-      return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
 
     const daysLeft = calculateDaysLeft();
@@ -186,8 +188,17 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   // Calculate and format the date range for the weekly view
   const getWeeklyDateText = () => {
     const today = new Date();
-    const budgetEndDate = new Date();
-    budgetEndDate.setDate(today.getDate() + budgetDetails.daysLeft - 1);
+    let budgetEndDate;
+
+    // Re-calculate the period end date accurately
+    if (today.getDate() < budget.paymentDay) {
+      budgetEndDate = new Date(today.getFullYear(), today.getMonth(), budget.paymentDay);
+    } else {
+      const nextMonth = new Date(today);
+      nextMonth.setMonth(today.getMonth() + 1);
+      budgetEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), budget.paymentDay);
+    }
+    budgetEndDate.setHours(23, 59, 59, 999);
 
     const weekStartDate = new Date();
     weekStartDate.setDate(today.getDate() + (currentWeek - 1) * 7);

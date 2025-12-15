@@ -25,14 +25,15 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
 
     let periodEndDate;
     if (currentDay < payDay) {
-      periodEndDate = new Date(currentYear, currentMonth, payDay - 1);
+      periodEndDate = new Date(currentYear, currentMonth, payDay);
     } else {
       const nextMonth = new Date(today);
       nextMonth.setMonth(currentMonth + 1);
-      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), payDay - 1);
+      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), payDay);
     }
-    const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Set time to the end of the day to include the last day fully
+    periodEndDate.setHours(23, 59, 59, 999);
+    const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const daysLeft = calculateDaysLeft(paymentDay);

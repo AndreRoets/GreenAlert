@@ -46,15 +46,16 @@ export default function DashboardScreen({ route, navigation }) {
 
     if (currentDay < paymentDay) {
       // Period ends this month
-      periodEndDate = new Date(currentYear, currentMonth, paymentDay - 1);
+      periodEndDate = new Date(currentYear, currentMonth, paymentDay);
     } else {
       // Period ends next month
       const nextMonth = new Date(today);
       nextMonth.setMonth(currentMonth + 1);
-      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), paymentDay - 1);
+      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), paymentDay);
     }
-    const diffTime = periodEndDate.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Set time to the end of the day to include the last day fully
+    periodEndDate.setHours(23, 59, 59, 999);
+    const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const daysLeft = budgetData ? calculateDaysLeft(budgetData.paymentDay) : 0;
