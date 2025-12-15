@@ -1,13 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { saveToStorage } from '../services/storage'; // Assuming this service exists
+import { disposableCategories } from './CategorySetupScreen';
 
-export default function OnboardingScreen({ navigation }) {
-  const handleChoice = async (choice) => {
+export default function OnboardingScreen({ navigation, route }) {
+  const handleChoice = async (choice, isGuest) => {
     await saveToStorage('userBudgetPreference', choice);
-    // Also mark onboarding as complete
-    // We will mark onboarding as complete after category setup
-    navigation.navigate('CategorySetup', { budgetPreference: choice });
+
+    if (choice === 'disposable') {
+      // For disposable income, we skip category selection and use a default set.
+      navigation.navigate('DisposableSetup', {
+        activeCategories: disposableCategories,
+        isGuest,
+      });
+    } else {
+      // For the entire budget, the user needs to select categories.
+      navigation.navigate('CategorySetup', { budgetPreference: choice, isGuest });
+    }
   };
 
   return (
@@ -15,12 +24,12 @@ export default function OnboardingScreen({ navigation }) {
       <Text style={styles.header}>Welcome to GreenAlert</Text>
       <Text style={styles.subHeader}>Brutally honest, but motivating.</Text>
       <Text style={styles.body}>Let’s get real about your spending. How do you want to track your budget?</Text>
-
-      <TouchableOpacity style={styles.button} onPress={() => handleChoice('entire')}>
+      
+      <TouchableOpacity style={styles.button} onPress={() => handleChoice('entire', route.params?.isGuest)}>
         <Text style={styles.buttonText}>Track Entire Budget</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity style={styles.button} onPress={() => handleChoice('disposable')}>
+      
+      <TouchableOpacity style={styles.button} onPress={() => handleChoice('disposable', route.params?.isGuest)}>
         <Text style={styles.buttonText}>Track Disposable Income Only</Text>
       </TouchableOpacity>
     </View>

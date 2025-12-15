@@ -7,7 +7,7 @@ const allCategories = [
   'Financial', 'Gifts & Donations'
 ];
 
-const disposableCategories = [
+export const disposableCategories = [
   'Lifestyle & Fun', 'Family & Dependents', 'Financial', 'Gifts & Donations'
 ];
 

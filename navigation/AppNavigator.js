@@ -11,6 +11,7 @@ import BudgetSetupScreen from '../screens/BudgetSetupScreen';
 import DisposableSetupScreen from '../screens/DisposableSetupScreen';
 import LeftoverBudgetScreen from '../screens/LeftoverBudgetScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import RecurringSpendsScreen from '../screens/RecurringSpendsScreen';
 import DisposableDashboardScreen from '../screens/DisposableDashboardScreen';
 import { loadFromStorage } from '../services/storage';
 
@@ -88,6 +89,7 @@ export default function AppNavigator() {
             ),
           })} />
         <Stack.Screen name="LeftoverBudget" component={LeftoverBudgetScreen} options={{ title: 'Budget Leftovers' }} />
+        <Stack.Screen name="RecurringSpends" component={RecurringSpendsScreen} options={{ title: 'Recurring Spends' }} />
         <Stack.Screen
           name="DisposableDashboard"
           component={DisposableDashboardScreen}

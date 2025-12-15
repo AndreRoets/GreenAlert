@@ -1,19 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Switch
 } from 'react-native';
 import { saveToStorage } from '../services/storage';
 
+const dayShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 export default function RecurringSpendsScreen({ route, navigation }) {
   const { budget, activeCategories, isGuest } = route.params;
   const [recurringSpends, setRecurringSpends] = useState([]);
+
+  const daysInPeriod = useMemo(() => {
+    if (budget.viewPreference !== 'daily') return [];
+
+    const today = new Date();
+    const currentDay = today.getDate();
+    let periodEndDate;
+    if (currentDay < budget.paymentDay) {
+      periodEndDate = new Date(today.getFullYear(), today.getMonth(), budget.paymentDay - 1);
+    } else {
+      const nextMonth = new Date(today);
+      nextMonth.setMonth(today.getMonth() + 1);
+      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), budget.paymentDay - 1);
+    }
+    const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());
+    const numberOfDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+
+    return Array.from({ length: numberOfDays }, (_, i) => {
+      const date = new Date();
+      date.setDate(today.getDate() + i);
+      return date;
+    });
+  }, [budget.paymentDay, budget.viewPreference]);
 
   const addSpend = () => {
     setRecurringSpends([...recurringSpends, {
       description: '',
       amount: '',
-      category: activeCategories[0], // Default to first category
-      applyToAll: budget.viewPreference === 'daily' ? false : undefined,
+      // Default to first category
+      category: activeCategories[0],
+      selectedDays: budget.viewPreference === 'daily' ? { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false } : undefined,
       daysPerWeek: budget.viewPreference === 'weekly' ? '7' : undefined,
     }]);
   };
@@ -38,6 +64,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
       ...budget,
       recurringSpends: recurringSpends.map(spend => ({
         ...spend,
+        // No longer need to handle applyToAll
         amount: parseFloat(spend.amount) || 0,
         daysPerWeek: spend.daysPerWeek ? parseInt(spend.daysPerWeek, 10) || 0 : undefined,
       })),
@@ -80,13 +107,33 @@ export default function RecurringSpendsScreen({ route, navigation }) {
       />
 
       {budget.viewPreference === 'daily' && (
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>Apply to all days</Text>
-          <Switch
-            value={spend.applyToAll}
-            onValueChange={(value) => updateSpend(index, 'applyToAll', value)}
-            trackColor={{ false: "#767577", true: "#32CD32" }}
-          />
+        <View>
+          <Text style={styles.toggleLabel}>Apply on which days?</Text>
+          <View style={styles.calendarContainer}>
+            {dayShortNames.map((dayName, dayIndex) => (
+              <TouchableOpacity
+                key={dayIndex}
+                style={[styles.dayButton, spend.selectedDays[dayIndex] && styles.dayButtonSelected]}
+                onPress={() => {
+                  const newSelectedDays = { ...spend.selectedDays, [dayIndex]: !spend.selectedDays[dayIndex] };
+                  updateSpend(index, 'selectedDays', newSelectedDays);
+                }}
+              >
+                <Text style={[styles.dayText, spend.selectedDays[dayIndex] && styles.dayTextSelected]}>
+                  {dayName}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.dateGrid}>
+            {daysInPeriod.map((date, dateIndex) => (
+              <TouchableOpacity key={dateIndex} style={[styles.dateCell, spend.selectedDays[date.getDay()] && styles.dateCellSelected]}>
+                <Text style={[styles.dateText, spend.selectedDays[date.getDay()] && styles.dateTextSelected]}>
+                  {date.getDate()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       )}
 
@@ -146,7 +193,54 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 15,
   },
-  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 },
+  calendarContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 5,
+    marginBottom: 5,
+  },
+  dayButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
+  },
+  dayButtonSelected: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  dayText: { fontSize: 12, fontWeight: 'bold', color: '#555' },
+  dayTextSelected: { color: '#FFFFFF' },
+  dateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+  },
+  dateCell: {
+    width: '14.28%', // 100% / 7 days
+    aspectRatio: 1, // Make it a square
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  dateCellSelected: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: '#DDDDDD',
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#AAAAAA',
+  },
+  dateTextSelected: {
+    color: '#000000',
+    fontWeight: 'bold',
+  },
   toggleLabel: { fontSize: 16 },
   daysPerWeekRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 },
   daysInput: {
