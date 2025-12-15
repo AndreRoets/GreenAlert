@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Keyboa
 import { saveToStorage } from '../services/storage';
 
 export default function BudgetSetupScreen({ route, navigation }) {
-  const { activeCategories } = route.params;
+  const { activeCategories, isGuest } = route.params;
 
   const [totalBudget, setTotalBudget] = useState('');
+  const [paymentDay, setPaymentDay] = useState('');
   const [categoryBudgets, setCategoryBudgets] = useState(
     activeCategories.reduce((acc, cat) => ({ ...acc, [cat]: '' }), {})
   );
@@ -23,6 +24,13 @@ export default function BudgetSetupScreen({ route, navigation }) {
     }
   };
 
+  const handlePaymentDayChange = (day) => {
+    const dayNum = parseInt(day, 10);
+    if (/^\d*$/.test(day) && (day === '' || (dayNum >= 1 && dayNum <= 31))) {
+      setPaymentDay(day);
+    }
+  };
+
   const allocated = Object.values(categoryBudgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
   const total = parseFloat(totalBudget) || 0;
   const remaining = total - allocated;
@@ -32,16 +40,23 @@ export default function BudgetSetupScreen({ route, navigation }) {
       Alert.alert("Invalid Amount", "Please enter a total budget amount greater than zero.");
       return;
     }
+    if (!paymentDay || parseInt(paymentDay, 10) <= 0) {
+      Alert.alert("Invalid Date", "Please enter a valid payment day (1-31).");
+      return;
+    }
 
     const budgetData = {
       totalBudget: total,
+      paymentDay: parseInt(paymentDay, 10),
       categoryBudgets: Object.entries(categoryBudgets).reduce((acc, [key, value]) => ({ ...acc, [key]: parseFloat(value) || 0 }), {}),
     };
 
-    await saveToStorage('userBudget', budgetData);
-    await saveToStorage('userCategories', activeCategories);
-    await saveToStorage('hasCompletedOnboarding', true);
-    navigation.navigate('Dashboard');
+    if (!isGuest) {
+      await saveToStorage('userBudget', budgetData);
+      await saveToStorage('userCategories', activeCategories);
+      await saveToStorage('hasCompletedOnboarding', true);
+    }
+    navigation.navigate('Dashboard', { budgetData }); // Pass data for guest mode
   };
 
   return (
@@ -65,6 +80,18 @@ export default function BudgetSetupScreen({ route, navigation }) {
           <Text style={[styles.remainingText, { color: remaining < 0 ? '#FF4136' : '#32CD32' }]}>
             Remaining: ${remaining.toFixed(2)}
           </Text>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>When do you get paid?</Text>
+          <TextInput
+            style={styles.categoryInput}
+            placeholder="Day of month (e.g., 15)"
+            keyboardType="number-pad"
+            value={paymentDay}
+            onChangeText={handlePaymentDayChange}
+            maxLength={2}
+          />
         </View>
 
         {activeCategories.map(category => (
@@ -119,6 +146,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
+  inputGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  inputLabel: { fontSize: 18, flex: 1 },
   categoryText: { fontSize: 18, flex: 1 },
   categoryInput: {
     fontSize: 18,

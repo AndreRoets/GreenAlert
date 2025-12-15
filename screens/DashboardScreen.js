@@ -3,15 +3,28 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { useIsFocused } from '@react-navigation/native';
 import { loadFromStorage } from '../services/storage';
 
-export default function DashboardScreen({ navigation }) {
+export default function DashboardScreen({ route, navigation }) {
   const [budgetData, setBudgetData] = useState(null);
+  const [categories, setCategories] = useState(null);
+  const [isGuest, setIsGuest] = useState(true);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
 
   useEffect(() => {
     const fetchBudgetData = async () => {
-      const data = await loadFromStorage('userBudget');
-      setBudgetData(data);
+      const session = await loadFromStorage('userSession');
+      setIsGuest(session?.isGuest || true);
+
+      // For guest mode, data is passed via params. Otherwise, load from storage.
+      if (route.params?.budgetData) {
+        setBudgetData(route.params.budgetData);
+        // Categories aren't passed in guest mode for this flow, so we don't set them.
+      } else {
+        const data = await loadFromStorage('userBudget');
+        const cats = await loadFromStorage('userCategories');
+        setBudgetData(data);
+        setCategories(cats);
+      }
       setLoading(false);
     };
 
@@ -93,7 +106,7 @@ export default function DashboardScreen({ navigation }) {
       </ScrollView>
 
       {unallocated > 0 && (
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeftoverBudget', { unallocated, daysLeft })}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeftoverBudget', { unallocated, daysLeft, paymentDay: budgetData.paymentDay, activeCategories: categories, isGuest })}>
           <Text style={styles.buttonText}>Budget Leftover Money</Text>
         </TouchableOpacity>
       )}

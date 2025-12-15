@@ -1,21 +1,63 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { saveToStorage } from '../services/storage';
 
 export default function LeftoverBudgetScreen({ route, navigation }) {
-  const { unallocated, daysLeft } = route.params;
+  const { unallocated, paymentDay, activeCategories, isGuest } = route.params;
   const [view, setView] = useState(null); // 'weekly' or 'monthly'
 
-  const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7)); // Ensure at least 1 week to avoid division by zero
-  const weeklyBudget = unallocated / weeksLeft;
+  const calculateDaysLeft = (payDay) => {
+    if (!payDay) return 0;
+
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    let periodEndDate;
+    if (currentDay < payDay) {
+      periodEndDate = new Date(currentYear, currentMonth, payDay - 1);
+    } else {
+      const nextMonth = new Date(today);
+      nextMonth.setMonth(currentMonth + 1);
+      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), payDay - 1);
+    }
+    const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+  const daysLeft = calculateDaysLeft(paymentDay);
+  const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
+  // Prevent division by zero if there are no days/weeks left
+  const weeklyBudget = weeksLeft > 0 ? unallocated / weeksLeft : 0;
+  const dailyBudget = daysLeft > 0 ? unallocated / daysLeft : 0;
 
   const handleSelectView = (selectedView) => {
-    setView(selectedView);
+    if (view === selectedView) {
+      setView(null); // Allow un-selecting
+    } else {
+      setView(selectedView);
+    }
   };
 
-  // For now, this just navigates back. We can add saving logic later.
-  const handleDone = () => {
-    // TODO: Save the user's preference (weekly/monthly) for the dashboard view.
-    navigation.goBack();
+  const handleDone = async () => {
+    if (!view) {
+      Alert.alert("Selection Needed", "Please select a daily or weekly budget view.");
+      return;
+    }
+
+    const budgetData = {
+      total: unallocated,
+      paymentDay: paymentDay,
+      viewPreference: view,
+    };
+
+    if (!isGuest) {
+      await saveToStorage('userBudget', budgetData);
+      await saveToStorage('userCategories', activeCategories);
+      await saveToStorage('hasCompletedOnboarding', true);
+    }
+
+    navigation.navigate('DisposableDashboard', { budget: budgetData });
   };
 
   return (
@@ -24,18 +66,25 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
       <Text style={styles.subHeader}>You have <Text style={styles.bold}>${unallocated.toFixed(2)}</Text> left for the next <Text style={styles.bold}>{daysLeft}</Text> days.</Text>
 
       <View style={styles.optionsContainer}>
-        <TouchableOpacity style={styles.optionButton} onPress={() => handleSelectView('monthly')}>
-          <Text style={styles.optionText}>Budget Monthly</Text>
+        <TouchableOpacity
+          style={[styles.optionButton, view === 'daily' && styles.selectedOption]}
+          onPress={() => handleSelectView('daily')}
+        >
+          <Text style={[styles.optionText, view === 'daily' && styles.selectedOptionText]}>Budget Daily</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.optionButton} onPress={() => handleSelectView('weekly')}>
-          <Text style={styles.optionText}>Budget Weekly</Text>
+        <TouchableOpacity
+          style={[styles.optionButton, view === 'weekly' && styles.selectedOption]}
+          onPress={() => handleSelectView('weekly')}
+        >
+          <Text style={[styles.optionText, view === 'weekly' && styles.selectedOptionText]}>Budget Weekly</Text>
         </TouchableOpacity>
       </View>
 
-      {view === 'monthly' && (
+      {view === 'daily' && (
         <View style={styles.resultContainer}>
-          <Text style={styles.resultLabel}>Your monthly fun money is:</Text>
-          <Text style={styles.resultAmount}>${unallocated.toFixed(2)}</Text>
+          <Text style={styles.resultLabel}>Your daily fun money is:</Text>
+          <Text style={styles.resultAmount}>${dailyBudget.toFixed(2)}</Text>
+          <Text style={styles.resultSubtext}>based on {daysLeft} day(s) left</Text>
         </View>
       )}
 
@@ -73,7 +122,12 @@ const styles = StyleSheet.create({
     width: '45%',
     alignItems: 'center',
   },
+  selectedOption: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
   optionText: { color: '#000000', fontSize: 16, fontWeight: 'bold' },
+  selectedOptionText: { color: '#FFFFFF' },
   resultContainer: {
     alignItems: 'center',
     flex: 1,

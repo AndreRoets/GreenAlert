@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 
 export default function DisposableSetupScreen({ route, navigation }) {
-  const { activeCategories } = route.params;
+  const { activeCategories, isGuest } = route.params;
 
   const [disposableIncome, setDisposableIncome] = useState('');
   const [paymentDay, setPaymentDay] = useState('');
@@ -36,7 +36,7 @@ export default function DisposableSetupScreen({ route, navigation }) {
       unallocated: total,
       paymentDay: parseInt(paymentDay, 10),
       activeCategories, // Pass categories along
-      isDisposableFlow: true, // Flag for the next screen
+      isGuest,
     });
   };
 

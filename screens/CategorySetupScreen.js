@@ -12,7 +12,7 @@ const disposableCategories = [
 ];
 
 export default function CategorySetupScreen({ route, navigation }) {
-  const { budgetPreference } = route.params;
+  const { budgetPreference, isGuest } = route.params;
   const [categories, setCategories] = useState({});
 
   useEffect(() => {
@@ -34,8 +34,12 @@ export default function CategorySetupScreen({ route, navigation }) {
       Alert.alert("No Categories Selected", "Please select at least one category to track.");
       return;
     }
-    // Navigate to the next step to set budget amounts for these categories
-    navigation.navigate('BudgetSetup', { activeCategories });
+    if (budgetPreference === 'entire') {
+      // Navigate to the next step to set budget amounts for these categories
+      navigation.navigate('BudgetSetup', { activeCategories, isGuest });
+    } else {
+      navigation.navigate('DisposableSetup', { activeCategories, isGuest });
+    }
   };
 
   const renderCategory = (category) => (
