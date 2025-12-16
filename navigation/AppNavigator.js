@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, TouchableOpacity, Text, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -16,6 +17,16 @@ import DisposableDashboardScreen from '../screens/DisposableDashboardScreen';
 import { loadFromStorage } from '../services/storage';
 
 const Stack = createStackNavigator();
+
+const clearAsyncStorage = async () => {
+  try {
+    await AsyncStorage.clear();
+    Alert.alert('Storage Cleared', 'All data has been cleared. Please restart the app to see the changes.');
+  } catch (e) {
+    Alert.alert('Error', 'Failed to clear data.');
+    console.error("Error clearing AsyncStorage:", e);
+  }
+};
 
 export default function AppNavigator() {
   const [initialRoute, setInitialRoute] = useState(null);
@@ -87,6 +98,14 @@ export default function AppNavigator() {
                 <Text style={{ color: '#000000', fontSize: 16 }}>Restart</Text>
               </TouchableOpacity>
             ),
+            // --- Development Only ---
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={clearAsyncStorage}
+                style={{ marginRight: 15 }}>
+                <Text style={{ color: '#FF4136', fontSize: 16 }}>Clear</Text>
+              </TouchableOpacity>
+            ),
           })} />
         <Stack.Screen name="LeftoverBudget" component={LeftoverBudgetScreen} options={{ title: 'Budget Leftovers' }} />
         <Stack.Screen name="RecurringSpends" component={RecurringSpendsScreen} options={{ title: 'Recurring Spends' }} />
@@ -106,6 +125,14 @@ export default function AppNavigator() {
                 style={{ marginLeft: 15 }}
               >
                 <Text style={{ color: '#000000', fontSize: 16 }}>Restart</Text>
+              </TouchableOpacity>
+            ),
+            // --- Development Only ---
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={clearAsyncStorage}
+                style={{ marginRight: 15 }}>
+                <Text style={{ color: '#FF4136', fontSize: 16 }}>Clear</Text>
               </TouchableOpacity>
             ),
           })} />

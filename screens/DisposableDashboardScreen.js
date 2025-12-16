@@ -1,19 +1,65 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadFromStorage } from '../services/storage';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
-  const { budget: initialBudget } = route.params;
-  const [budget, setBudget] = useState(initialBudget); // Allow budget to be updated with expenses
-  const [adjustedBudgets, setAdjustedBudgets] = useState(initialBudget.dailyBudgets || initialBudget.weeklyBudgets || []); // Store the *allocated* budgets, potentially adjusted for past overspends. Ensure it's always an array.
+  // State to hold budget data. Initialize as null.
+  const [budget, setBudget] = useState(null);
+  const [adjustedBudgets, setAdjustedBudgets] = useState([]);
   const [currentWeek, setCurrentWeek] = useState(1);
   const [currentDay, setCurrentDay] = useState(1);
   const [expenses, setExpenses] = useState([]);
   const [lastProcessedExpenseCount, setLastProcessedExpenseCount] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
   const [newExpense, setNewExpense] = useState({ amount: '', description: '' });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const initializeBudget = async () => {
+      setIsLoading(true);
+      let initialBudget;
+      if (route.params?.budget) {
+        // Budget was passed via navigation (e.g., after setup)
+        initialBudget = route.params.budget;
+      } else {
+        // No params, load from storage (e.g., on app start)
+        initialBudget = await loadFromStorage('userBudget');
+      }
+
+      if (initialBudget) {
+        setBudget(initialBudget);
+        setAdjustedBudgets(initialBudget.dailyBudgets || initialBudget.weeklyBudgets || []);
+      }
+      setIsLoading(false);
+    };
+
+    initializeBudget();
+  }, [route.params?.budget]);
+
+  // When this screen is mounted, it means the user has completed this setup flow.
+  // We save this as the default screen for future app loads.
+  useEffect(() => {
+    const setAsDefaultScreen = async () => {
+      try {
+        await AsyncStorage.setItem('@default_screen', 'DisposableDashboard');
+      } catch (e) {
+        console.error("Failed to save default screen preference.", e);
+      }
+    };
+    // Only set as default if we came from the setup flow (i.e., params exist)
+    if (route.params?.budget) {
+      setAsDefaultScreen();
+    }
+  }, [route.params?.budget]);
 
   // Memoize budget calculations to avoid re-running on every render
   const budgetDetails = useMemo(() => {
+    // If budget is not loaded yet, return a default structure to prevent crashes
+    if (!budget) {
+      return { amount: 0, label: 'Loading...', currency: { symbol: '$' }, recurringSpendsForView: [], oneOffSpendsForView: [], savingsForView: 0 };
+    }
+
     if (!budget.paymentDay) {
       return {
         amount: budget.total,
@@ -179,7 +225,8 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   // This useEffect applies overspend deductions to *future* periods.
   // It only runs when new expenses are added to prevent infinite loops.
   useEffect(() => {
-    if (expenses.length <= lastProcessedExpenseCount) return; // Only process if new expenses have been added
+    // Guard against running before budget is loaded or if no new expenses are added
+    if (!budget || expenses.length <= lastProcessedExpenseCount) return;
     const { overspentAmount, isDaily, isWeekly, daysLeft, weeksLeft } = budgetDetails;
 
     if (overspentAmount > 0) {
@@ -297,6 +344,11 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     setModalVisible(true);
   };
 
+  // Render a loading indicator until the budget is ready
+  if (isLoading || !budget) {
+    return <View style={styles.container}><ActivityIndicator size="large" /></View>;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.summaryContainer}>
@@ -313,23 +365,23 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
         {budgetDetails.isDaily && budgetDetails.daysLeft > 1 && (
           <View style={styles.weekNavigator}>
-            <TouchableOpacity onPress={handlePrevDay} disabled={currentDay === 1}>
-              <Text style={[styles.arrow, currentDay === 1 && styles.arrowDisabled]}>{'<'}</Text>
+            <TouchableOpacity onPress={handlePrevDay} disabled={currentDay <= 1}>
+              <Text style={[styles.arrow, currentDay <= 1 && styles.arrowDisabled]}>{'<'}</Text>
             </TouchableOpacity>
             <Text style={styles.weekText}>{getDailyDateText()}</Text>
-            <TouchableOpacity onPress={handleNextDay} disabled={currentDay === budgetDetails.daysLeft}>
-              <Text style={[styles.arrow, currentDay === budgetDetails.daysLeft && styles.arrowDisabled]}>{'>'}</Text>
+            <TouchableOpacity onPress={handleNextDay} disabled={!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft}>
+              <Text style={[styles.arrow, (!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft) && styles.arrowDisabled]}>{'>'}</Text>
             </TouchableOpacity>
           </View>
         )}
         {budgetDetails.isWeekly && budgetDetails.weeksLeft > 1 && (
           <View style={styles.weekNavigator}>
-            <TouchableOpacity onPress={handlePrevWeek} disabled={currentWeek === 1}>
-              <Text style={[styles.arrow, currentWeek === 1 && styles.arrowDisabled]}>{'<'}</Text>
+            <TouchableOpacity onPress={handlePrevWeek} disabled={currentWeek <= 1}>
+              <Text style={[styles.arrow, currentWeek <= 1 && styles.arrowDisabled]}>{'<'}</Text>
             </TouchableOpacity>
             <Text style={styles.weekText}>{getWeeklyDateText()}</Text>
-            <TouchableOpacity onPress={handleNextWeek} disabled={currentWeek === budgetDetails.weeksLeft}>
-              <Text style={[styles.arrow, currentWeek === budgetDetails.weeksLeft && styles.arrowDisabled]}>{'>'}</Text>
+            <TouchableOpacity onPress={handleNextWeek} disabled={!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft}>
+              <Text style={[styles.arrow, (!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft) && styles.arrowDisabled]}>{'>'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -372,7 +424,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
             <Text style={styles.modalHeader}>Add Expense</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder={`Amount (${budgetDetails.currency.symbol})`}
+              placeholder={`Amount (${budgetDetails.currency?.symbol || '$'})`}
               keyboardType="numeric"
               value={newExpense.amount}
               onChangeText={(text) => setNewExpense({ ...newExpense, amount: text })}
