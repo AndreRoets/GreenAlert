@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { saveToStorage } from '../services/storage'; // Assuming you've added saveToStorage
+import { saveToStorage, loadFromStorage } from '../services/storage';
 
 export default function ProfileSetupScreen({ route, navigation }) {
   const { userId, email } = route.params; // Get user info passed from SignUpScreen
@@ -14,17 +14,19 @@ export default function ProfileSetupScreen({ route, navigation }) {
     }
 
     try {
-      // Retrieve existing user data (if any) and merge new profile info
-      const currentUserData = await saveToStorage('currentUser', {
+      // Save the user's profile information
+      await saveToStorage('currentUser', {
         userId,
         email,
         firstName,
         lastName,
       });
 
-      Alert.alert('Success', 'Profile saved! Welcome to your dashboard.');
-      // Navigate to the main dashboard, replacing the current stack
-      navigation.replace('DisposableDashboard');
+      // Load the session to get the selected currency
+      const session = await loadFromStorage('userSession');
+
+      // Now that the profile is saved, proceed to the onboarding flow
+      navigation.replace('Onboarding', { isGuest: false, currency: session.currency });
     } catch (error) {
       console.error('Failed to save profile:', error);
       Alert.alert('Error', 'Failed to save profile. Please try again.');

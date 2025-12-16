@@ -52,7 +52,11 @@ export default function AuthScreen({ navigation }) {
       currency: currency,
     };
     await saveToStorage('userSession', userSession);
-    navigation.replace('Onboarding', { isGuest: false, currency: currency });
+    // Navigate to Profile Setup to get user's name
+    navigation.replace('ProfileSetup', {
+      userId: email, // Using email as a unique ID for now
+      email: email,
+    });
   };
 
   const handleGuest = async () => {

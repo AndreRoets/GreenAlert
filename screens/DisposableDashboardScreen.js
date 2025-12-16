@@ -1,10 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  View, Text,
+  StyleSheet, TouchableOpacity,
+  ScrollView, 
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { loadFromStorage } from '../services/storage';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
-  // State to hold budget data. Initialize as null.
   const [budget, setBudget] = useState(null);
   const [adjustedBudgets, setAdjustedBudgets] = useState([]);
   const [currentWeek, setCurrentWeek] = useState(1);
@@ -12,6 +20,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [expenses, setExpenses] = useState([]);
   const [lastProcessedExpenseCount, setLastProcessedExpenseCount] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [lastWarningDate, setLastWarningDate] = useState(null);
   const [newExpense, setNewExpense] = useState({ amount: '', description: '' });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,44 +42,35 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       }
       setIsLoading(false);
     };
-
     initializeBudget();
   }, [route.params?.budget]);
 
-  // When this screen is mounted, it means the user has completed this setup flow.
-  // We save this as the default screen for future app loads.
-  useEffect(() => {
-    const setAsDefaultScreen = async () => {
-      try {
-        await AsyncStorage.setItem('@default_screen', 'DisposableDashboard');
-      } catch (e) {
-        console.error("Failed to save default screen preference.", e);
-      }
-    };
-    // Only set as default if we came from the setup flow (i.e., params exist)
-    if (route.params?.budget) {
-      setAsDefaultScreen();
-    }
-  }, [route.params?.budget]);
-
-  // Memoize budget calculations to avoid re-running on every render
   const budgetDetails = useMemo(() => {
-    // If budget is not loaded yet, return a default structure to prevent crashes
     if (!budget) {
-      return { amount: 0, label: 'Loading...', currency: { symbol: '$' }, recurringSpendsForView: [], oneOffSpendsForView: [], savingsForView: 0 };
+      return {
+        amount: 0,
+        label: 'Loading...',
+        currency: { symbol: '$' },
+        recurringSpendsForView: [],
+        oneOffSpendsForView: [],
+        savingsForView: 0,
+        overspentAmount: 0,
+        statusColor: '#32CD32', // Default to green
+      };
     }
 
     if (!budget.paymentDay) {
       return {
         amount: budget.total,
         label: 'Total Budget',
-        isWeekly: false,
         isDaily: false,
+        isWeekly: false,
         recurringSpendsForView: [],
         oneOffSpendsForView: [],
         savingsForView: 0,
-        isSavingsNegative: false,
+        overspentAmount: 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
+        statusColor: '#32CD32',
       };
     }
 
@@ -96,7 +96,6 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     const spendableTotal = budget.total - (budget.savingsGoal || 0);
     const totalSavings = budget.savingsGoal || 0;
 
-    // --- Daily View Logic ---
     if (budget.viewPreference === 'daily') {
       const displayDate = new Date();
       displayDate.setDate(displayDate.getDate() + currentDay - 1);
@@ -117,7 +116,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const totalSpends = recurringTotal + oneOffTotal;
 
       let dayFunMoneyBudget;
-      const currentBudgets = adjustedBudgets || budget.dailyBudgets;
+      const currentBudgets = adjustedBudgets.length > 0 ? adjustedBudgets : budget.dailyBudgets;
       if (currentBudgets && currentBudgets.length > 0) {
         dayFunMoneyBudget = currentBudgets[currentDay - 1] || 0;
       } else {
@@ -131,6 +130,13 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const overspentAmount = finalFunMoney < 0 ? Math.abs(finalFunMoney) : 0;
       const finalDailySavings = dailySavingsBudget - overspentAmount;
 
+      let statusColor = '#32CD32'; // green
+      if (finalFunMoney < 0) {
+        statusColor = '#FF4136'; // red
+      } else if (dayFunMoneyBudget > 0 && finalFunMoney <= dayFunMoneyBudget / 3) {
+        statusColor = '#FFD700'; // yellow
+      }
+
       return {
         amount: finalFunMoney,
         label: 'Daily Budget',
@@ -143,13 +149,13 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         isSavingsNegative: finalDailySavings < 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
         overspentAmount: overspentAmount,
+        statusColor: statusColor,
       };
     }
 
-    // --- Weekly View Logic ---
-    if (budget.viewPreference === 'weekly') {
-      const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
+    const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
 
+    if (budget.viewPreference === 'weekly') {
       // Calculate the weekly amount for each recurring spend and filter out any with no cost.
       const spendsToDisplay = (budget.recurringSpends || []).map(spend => ({
         ...spend,
@@ -157,7 +163,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       })).filter(spend => spend.amount > 0);
 
       const weekStartDate = new Date();
-      weekStartDate.setDate(weekStartDate.getDate() + (currentWeek - 1) * 7);
+      weekStartDate.setDate(new Date().getDate() + (currentWeek - 1) * 7);
       weekStartDate.setHours(0, 0, 0, 0);
 
       const weekEndDate = new Date(weekStartDate);
@@ -171,14 +177,12 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
       const oneOffTotal = oneOffSpendsForWeek.reduce((sum, exp) => sum + exp.amount, 0);
 
-      const recurringTotal = spendsToDisplay.reduce((total, spend) => {
-        return total + spend.amount;
-      }, 0);
+      const recurringTotal = spendsToDisplay.reduce((total, spend) => total + spend.amount, 0);
 
       const totalSpends = recurringTotal + oneOffTotal;
 
       let weekFunMoneyBudget;
-      const currentBudgets = adjustedBudgets || budget.weeklyBudgets;
+      const currentBudgets = adjustedBudgets.length > 0 ? adjustedBudgets : budget.weeklyBudgets;
       if (currentBudgets && currentBudgets.length > 0) {
         weekFunMoneyBudget = currentBudgets[currentWeek - 1] || 0;
       } else {
@@ -192,6 +196,13 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const overspentAmount = finalFunMoney < 0 ? Math.abs(finalFunMoney) : 0;
       const finalWeeklySavings = weeklySavingsBudget - overspentAmount;
 
+      let statusColor = '#32CD32'; // green
+      if (finalFunMoney < 0) {
+        statusColor = '#FF4136'; // red
+      } else if (weekFunMoneyBudget > 0 && finalFunMoney <= weekFunMoneyBudget / 3) {
+        statusColor = '#FFD700'; // yellow
+      }
+
       return {
         amount: finalFunMoney,
         label: 'Weekly Budget',
@@ -204,10 +215,10 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         isSavingsNegative: finalWeeklySavings < 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
         overspentAmount: overspentAmount,
+        statusColor: statusColor,
       };
     }
 
-    // --- Fallback for no preference ---
     return {
       amount: budget.total,
       label: 'Total Budget',
@@ -218,16 +229,36 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       savingsForView: 0,
       isSavingsNegative: false,
       currency: budget.currency || { symbol: '$', code: 'USD' },
+      statusColor: '#32CD32',
       overspentAmount: 0,
     };
   }, [budget, adjustedBudgets, currentDay, currentWeek, expenses]);
 
-  // This useEffect applies overspend deductions to *future* periods.
-  // It only runs when new expenses are added to prevent infinite loops.
   useEffect(() => {
-    // Guard against running before budget is loaded or if no new expenses are added
+    if (budgetDetails.statusColor === '#FFD700') {
+      const today = new Date().toDateString();
+      const periodIdentifier = budgetDetails.isDaily ? `${today}-day-${currentDay}` : `${today}-week-${currentWeek}`;
+
+      if (lastWarningDate !== periodIdentifier) {
+        Alert.alert(
+          "Budget Warning",
+          "You're getting close to your limit for this period. Be mindful of your next expenses!",
+          [{ text: "OK" }]
+        );
+        setLastWarningDate(periodIdentifier);
+      }
+    }
+  }, [
+    budgetDetails.statusColor,
+    lastWarningDate,
+    budgetDetails.isDaily, currentDay, currentWeek
+  ]);
+
+  useEffect(() => {
     if (!budget || expenses.length <= lastProcessedExpenseCount) return;
-    const { overspentAmount, isDaily, isWeekly, daysLeft, weeksLeft } = budgetDetails;
+
+    const { overspentAmount, isDaily, isWeekly, daysLeft, weeksLeft } =
+      budgetDetails;
 
     if (overspentAmount > 0) {
       Alert.alert(
@@ -235,82 +266,65 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         `You've overspent by ${budgetDetails.currency.symbol}${overspentAmount.toFixed(2)}. This will be deducted from your future budgets.`
       );
 
-      let newAdjustedBudgets = [...adjustedBudgets]; // Create a mutable copy of the current adjusted budgets
+      let newAdjustedBudgets = [...adjustedBudgets];
 
-      // If newAdjustedBudgets is empty, it means no custom budgets were set initially,
-      // so we need to populate it with average values for the entire period before applying deductions.
       if (newAdjustedBudgets.length === 0) {
           const spendableTotal = budget.total - (budget.savingsGoal || 0);
           if (isDaily && daysLeft > 0) {
               const dailyAverage = spendableTotal / daysLeft;
-              for (let i = 0; i < daysLeft; i++) newAdjustedBudgets.push(dailyAverage);
+              newAdjustedBudgets = Array(daysLeft).fill(dailyAverage);
           } else if (isWeekly && weeksLeft > 0) {
               const weeklyAverage = spendableTotal / weeksLeft;
-              for (let i = 0; i < weeksLeft; i++) newAdjustedBudgets.push(weeklyAverage);
+              newAdjustedBudgets = Array(weeksLeft).fill(weeklyAverage);
           }
       }
       
-      if (isDaily) {
-        const remainingDaysForDeduction = newAdjustedBudgets.length - currentDay; // Days *after* the current day
-        if (remainingDaysForDeduction > 0) {
-          const deductionPerDay = overspentAmount / remainingDaysForDeduction;
-          for (let i = currentDay; i < newAdjustedBudgets.length; i++) { // Start from the *next* day (index `currentDay`)
-            newAdjustedBudgets[i] = Math.max(0, (newAdjustedBudgets[i] || 0) - deductionPerDay);
-          }
-        }
-      } else if (isWeekly) {
-        const remainingWeeksForDeduction = newAdjustedBudgets.length - currentWeek; // Weeks *after* the current week
-        if (remainingWeeksForDeduction > 0) {
-          const deductionPerWeek = overspentAmount / remainingWeeksForDeduction;
-          for (let i = currentWeek; i < newAdjustedBudgets.length; i++) { // Start from the *next* week (index `currentWeek`)
-            newAdjustedBudgets[i] = Math.max(0, (newAdjustedBudgets[i] || 0) - deductionPerWeek);
-          }
+      const index = isDaily ? currentDay : currentWeek;
+      const remainingPeriods = newAdjustedBudgets.length - index;
+
+      if (remainingPeriods > 0) {
+        const deduction = overspentAmount / remainingPeriods;
+        for (let i = index; i < newAdjustedBudgets.length; i++) {
+          newAdjustedBudgets[i] = Math.max(0, (newAdjustedBudgets[i] || 0) - deduction);
         }
       }
 
       setAdjustedBudgets(newAdjustedBudgets);
     }
     setLastProcessedExpenseCount(expenses.length);
-  }, [expenses, budgetDetails.overspentAmount, budgetDetails.isDaily, budgetDetails.isWeekly, budgetDetails.daysLeft, budgetDetails.weeksLeft, budgetDetails.currency, budget.total, budget.savingsGoal, currentDay, currentWeek, adjustedBudgets, lastProcessedExpenseCount]);
+  }, [
+    expenses,
+    budgetDetails.overspentAmount,
+    budgetDetails.isDaily,
+    budgetDetails.isWeekly,
+    budgetDetails.daysLeft,
+    budgetDetails.weeksLeft, budgetDetails.currency,
+    budget,
+    currentDay,
+    currentWeek,
+    adjustedBudgets,
+    lastProcessedExpenseCount,
+  ]);
 
   const handleNextWeek = () => currentWeek < budgetDetails.weeksLeft && setCurrentWeek(currentWeek + 1);
   const handlePrevWeek = () => currentWeek > 1 && setCurrentWeek(currentWeek - 1);
   const handleNextDay = () => currentDay < budgetDetails.daysLeft && setCurrentDay(currentDay + 1);
   const handlePrevDay = () => currentDay > 1 && setCurrentDay(currentDay - 1);
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  // Calculate and format the date for the daily view
   const getDailyDateText = () => {
     const displayDate = new Date();
     displayDate.setDate(displayDate.getDate() + currentDay - 1);
     return formatDate(displayDate);
   };
 
-  // Calculate and format the date range for the weekly view
   const getWeeklyDateText = () => {
-    const today = new Date();
-    let budgetEndDate;
-
-    // Re-calculate the period end date accurately
-    if (today.getDate() < budget.paymentDay) {
-      budgetEndDate = new Date(today.getFullYear(), today.getMonth(), budget.paymentDay);
-    } else {
-      const nextMonth = new Date(today);
-      nextMonth.setMonth(today.getMonth() + 1);
-      budgetEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), budget.paymentDay);
-    }
-    budgetEndDate.setHours(23, 59, 59, 999);
-
     const weekStartDate = new Date();
-    weekStartDate.setDate(today.getDate() + (currentWeek - 1) * 7);
-
-    const weekEndDate = new Date();
+    weekStartDate.setDate(new Date().getDate() + (currentWeek - 1) * 7);
+    const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekStartDate.getDate() + 6);
-
-    return `${formatDate(weekStartDate)} - ${formatDate(weekEndDate > budgetEndDate ? budgetEndDate : weekEndDate)}`;
+    return `${formatDate(weekStartDate)} - ${formatDate(weekEndDate)}`;
   };
 
   const handleAddExpense = () => {
@@ -319,41 +333,28 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       Alert.alert('Invalid Expense', 'Please enter a valid amount and description.');
       return;
     }
-
     let expenseDate = new Date();
     if (budget.viewPreference === 'daily') {
       expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
     }
-    // For weekly, we just use today's date, and it will be filtered into the correct week.
-
-    const expenseToAdd = {
-      id: Date.now(), // Simple unique ID
-      amount: amount,
-      description: newExpense.description,
-      date: expenseDate.toISOString(),
-    };
-
-    setExpenses([...expenses, expenseToAdd]);
+    setExpenses([...expenses, { id: Date.now(), amount, description: newExpense.description, date: expenseDate.toISOString() }]);
     setNewExpense({ amount: '', description: '' });
     setModalVisible(false);
   };
 
-  const openAddExpenseModal = () => {
-    // Reset form state when opening
-    setNewExpense({ amount: '', description: '' });
-    setModalVisible(true);
-  };
-
-  // Render a loading indicator until the budget is ready
   if (isLoading || !budget) {
-    return <View style={styles.container}><ActivityIndicator size="large" /></View>;
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.summaryContainer}>
         <Text style={styles.label}>{budgetDetails.label}</Text>
-        <Text style={[styles.amount, { color: budgetDetails.amount >= 0 ? '#32CD32' : '#FF4136' }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</Text>
+        <Text style={[styles.amount, { color: budgetDetails.statusColor }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</Text>
         <Text style={styles.subAmount}>Remaining</Text>
 
         {budget.savingsGoal > 0 && (
@@ -370,7 +371,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
             </TouchableOpacity>
             <Text style={styles.weekText}>{getDailyDateText()}</Text>
             <TouchableOpacity onPress={handleNextDay} disabled={!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft}>
-              <Text style={[styles.arrow, (!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft) && styles.arrowDisabled]}>{'>'}</Text>
+              <Text style={[styles.arrow, (!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft) && styles.arrowDisabled]}>{' >'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -381,7 +382,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
             </TouchableOpacity>
             <Text style={styles.weekText}>{getWeeklyDateText()}</Text>
             <TouchableOpacity onPress={handleNextWeek} disabled={!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft}>
-              <Text style={[styles.arrow, (!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft) && styles.arrowDisabled]}>{'>'}</Text>
+              <Text style={[styles.arrow, (!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft) && styles.arrowDisabled]}>{' >'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -389,11 +390,11 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
       <ScrollView style={styles.expenseList}>
         {(budgetDetails.recurringSpendsForView.length > 0 || budgetDetails.oneOffSpendsForView.length > 0) && (
-          <Text style={styles.expenseHeader}>Expected Recurring Spends</Text>
+          <Text style={styles.expenseHeader}>Spends This Period</Text>
         )}
 
         {budgetDetails.recurringSpendsForView.map((spend, index) => (
-          <View key={index} style={styles.expenseRow}>
+          <View key={`rec-${index}`} style={styles.expenseRow}>
             <Text style={styles.expenseDescription}>{spend.description}</Text>
             <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{spend.amount.toFixed(2)}</Text>
           </View>
@@ -453,7 +454,10 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      <TouchableOpacity style={styles.button} onPress={openAddExpenseModal}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => setModalVisible(true)}
+      >
         <Text style={styles.buttonText}>Add Expense</Text>
       </TouchableOpacity>
     </View>
@@ -490,11 +494,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  label: { fontSize: 24, fontWeight: 'bold', color: '#555555' },
+  label: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#555555',
+  },
   amount: {
     fontSize: 72,
     fontWeight: 'bold',
-    marginVertical: 10,
+    marginVertical: 20,
   },
   weekNavigator: {
     flexDirection: 'row',
@@ -548,7 +556,11 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
