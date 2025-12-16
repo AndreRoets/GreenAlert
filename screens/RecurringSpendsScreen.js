@@ -72,12 +72,12 @@ export default function RecurringSpendsScreen({ route, navigation }) {
 
     if (!isGuest) {
       await saveToStorage('userBudget', finalBudget);
-      // These were saved in the previous screen, but we can re-save to be safe
-      await saveToStorage('userCategories', activeCategories);
+      // Save disposable categories to a separate key to avoid conflicts
+      await saveToStorage('disposableUserCategories', activeCategories);
       await saveToStorage('hasCompletedOnboarding', true);
     }
 
-    navigation.navigate('DisposableDashboard', { budget: finalBudget });
+    navigation.navigate('DisposableDashboard', { budget: finalBudget, categories: activeCategories });
   };
 
   const renderSpendItem = (spend, index) => (

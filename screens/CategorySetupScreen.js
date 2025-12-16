@@ -7,10 +7,6 @@ const allCategories = [
   'Financial', 'Gifts & Donations'
 ];
 
-export const disposableCategories = [
-  'Lifestyle & Fun', 'Family & Dependents', 'Financial', 'Gifts & Donations'
-];
-
 export default function CategorySetupScreen({ route, navigation }) {
   const { budgetPreference, isGuest, currency, existingBudget, existingCategories } = route.params;
   const [categories, setCategories] = useState({});
@@ -27,7 +23,7 @@ export default function CategorySetupScreen({ route, navigation }) {
       }, {});
     } else {
       // Otherwise, start with the default set
-      const initialCategories = budgetPreference === 'entire' ? allCategories : disposableCategories;
+      const initialCategories = allCategories; // This screen is only for the 'entire' budget flow now.
       categoryState = initialCategories.reduce((acc, category) => {
         acc[category] = true; // All categories are on by default
         return acc;

@@ -112,17 +112,18 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
     budgetData.currency = currency;
 
     if (!isGuest) {
+      // We only save the budget here. Categories are handled on the next screens.
       await saveToStorage('userBudget', budgetData);
-      await saveToStorage('userCategories', activeCategories);
       await saveToStorage('hasCompletedOnboarding', true);
     }
 
-    // Navigate to the next step
-    navigation.navigate('RecurringSpends', {
-      budget: budgetData,
-      activeCategories,
+    // Navigate to category setup for this disposable/leftover amount
+    navigation.navigate('DisposableCategorySetup', {
       isGuest,
       currency,
+      activeCategories, // Pass the categories along
+      // Pass the budget data configured on this screen
+      budget: budgetData,
     });
   };
 

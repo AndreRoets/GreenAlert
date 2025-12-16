@@ -23,32 +23,44 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [expenses, setExpenses] = useState([]);
   const [lastProcessedExpenseCount, setLastProcessedExpenseCount] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const [lastWarningDate, setLastWarningDate] = useState(null);
-  const [newExpense, setNewExpense] = useState({ amount: '', description: '', necessary: false });
+  const [newExpense, setNewExpense] = useState({ amount: '', description: '', necessary: false, category: '' });
   const [isLoading, setIsLoading] = useState(true);
   const { setBudgetDetails } = useBudget();
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const initializeBudget = async () => {
       console.log("Initializing budget...");
       setIsLoading(true);
       let initialBudget;
-      if (route.params?.budget) {
+      let initialCategories;
+
+      if (route.params?.budget && route.params?.categories) {
         // Budget was passed via navigation (e.g., after setup)
         initialBudget = route.params.budget;
+        initialCategories = route.params.categories;
       } else {
         // No params, load from storage (e.g., on app start)
         initialBudget = await loadFromStorage('userBudget');
+        // Load the specific categories for the disposable budget
+        initialCategories = await loadFromStorage('disposableUserCategories');
       }
 
       if (initialBudget) {
         setBudget(initialBudget);
         setAdjustedBudgets(initialBudget.dailyBudgets || initialBudget.weeklyBudgets || []);
       }
+      if (initialCategories) {
+        setCategories(initialCategories);
+        // Set default category for new expenses
+        setNewExpense(prev => ({ ...prev, category: initialCategories[0] || '' }));
+      }
       setIsLoading(false);
     };
     initializeBudget();
-  }, [route.params?.budget]);
+  }, [route.params?.budget, route.params?.categories]);
 
   const budgetDetails = useMemo(() => {
     if (!budget) {
@@ -293,16 +305,18 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         `You've overspent by ${budgetDetails.currency.symbol}${overspentAmount.toFixed(2)}. This will be deducted from your future budgets.`
       );
 
-      let newAdjustedBudgets = [...adjustedBudgets];
+      // Use a fresh copy of the original budgets if they exist, otherwise start empty.
+      let newAdjustedBudgets = budget.dailyBudgets ? [...budget.dailyBudgets] : (budget.weeklyBudgets ? [...budget.weeklyBudgets] : []);
 
+      // If no pre-set budgets exist, create an evenly distributed one for the whole period.
       if (newAdjustedBudgets.length === 0) {
           const spendableTotal = budget.total - (budget.savingsGoal || 0);
           if (isDaily && daysLeft > 0) {
               const dailyAverage = spendableTotal / daysLeft;
-              newAdjustedBudgets = Array(daysLeft).fill(dailyAverage);
+              newAdjustedBudgets = Array(daysLeft).fill(dailyAverage); // Create for the entire period
           } else if (isWeekly && weeksLeft > 0) {
               const weeklyAverage = spendableTotal / weeksLeft;
-              newAdjustedBudgets = Array(weeksLeft).fill(weeklyAverage);
+              newAdjustedBudgets = Array(weeksLeft).fill(weeklyAverage); // Create for the entire period
           }
       }
       
@@ -356,16 +370,16 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
   const handleAddExpense = () => {
     const amount = parseFloat(newExpense.amount);
-    if (!amount || amount <= 0 || !newExpense.description) {
-      Alert.alert('Invalid Expense', 'Please enter a valid amount and description.');
+    if (!amount || amount <= 0 || !newExpense.description || !newExpense.category) {
+      Alert.alert('Invalid Expense', 'Please enter a valid amount, description, and category.');
       return;
     }
     let expenseDate = new Date();
     if (budget.viewPreference === 'daily') {
       expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
     }
-    setExpenses([...expenses, { id: Date.now(), amount, description: newExpense.description, necessary: newExpense.necessary, date: expenseDate.toISOString() }]);
-    setNewExpense({ amount: '', description: '', necessary: false });
+    setExpenses([...expenses, { id: Date.now(), amount, description: newExpense.description, necessary: newExpense.necessary, category: newExpense.category, date: expenseDate.toISOString() }]);
+    setNewExpense({ amount: '', description: '', necessary: false, category: categories[0] || '' });
     setModalVisible(false);
   };
 
@@ -486,6 +500,11 @@ export default function DisposableDashboardScreen({ route, navigation }) {
               value={newExpense.description}
               onChangeText={(text) => setNewExpense({ ...newExpense, description: text })}
             />
+            <TouchableOpacity style={styles.categoryButton} onPress={() => setCategoryModalVisible(true)}>
+              <Text style={styles.categoryButtonText}>
+                Category: {newExpense.category || 'Select...'}
+              </Text>
+            </TouchableOpacity>
             <View style={styles.switchContainer}>
               <Text style={styles.switchLabel}>Was this necessary?</Text>
               <Switch
@@ -511,6 +530,34 @@ export default function DisposableDashboardScreen({ route, navigation }) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isCategoryModalVisible}
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.categoryModalContent}>
+            <Text style={styles.modalHeader}>Select Category</Text>
+            <ScrollView>
+              {categories.map((cat, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.categoryItem}
+                  onPress={() => {
+                    setNewExpense({ ...newExpense, category: cat });
+                    setCategoryModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.categoryItemText}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
 
       <TouchableOpacity
         style={styles.button}
@@ -665,6 +712,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 20,
   },
+  categoryButton: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#000000',
+    paddingVertical: 15,
+    marginBottom: 20,
+  },
+  categoryButtonText: { fontSize: 18, color: '#333' },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -698,5 +752,21 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#000000',
+  },
+  categoryModalContent: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '50%',
+  },
+  categoryItem: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  categoryItemText: {
+    fontSize: 18,
+    textAlign: 'center',
   },
 });

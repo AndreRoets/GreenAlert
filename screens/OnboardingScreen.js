@@ -1,7 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { saveToStorage } from '../services/storage'; // Assuming this service exists
-import { disposableCategories } from './CategorySetupScreen';
+
+// These are the correct default categories for the disposable income flow.
+const defaultDisposableCategories = [
+  'Food & Drinks', 'Transport', 'Personal & Lifestyle', 'Social & Gifts', 'Miscellaneous'
+];
 
 export default function OnboardingScreen({ navigation, route }) {
   const { isGuest, currency } = route.params;
@@ -9,11 +13,8 @@ export default function OnboardingScreen({ navigation, route }) {
     await saveToStorage('userBudgetPreference', choice);
 
     if (choice === 'disposable') {
-      // For disposable income, we skip category selection and use a default set.
-      navigation.navigate('DisposableSetup', {
-        activeCategories: disposableCategories,
-        isGuest, currency
-      });
+      // For disposable income, go directly to setting the amount. Categories are handled later.
+      navigation.navigate('DisposableSetup', { activeCategories: defaultDisposableCategories, isGuest, currency });
     } else {
       // For the entire budget, the user needs to select categories.
       navigation.navigate('CategorySetup', { budgetPreference: choice, isGuest, currency });

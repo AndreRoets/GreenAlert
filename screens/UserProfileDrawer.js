@@ -3,7 +3,6 @@ import { Modal, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Ale
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { loadFromStorage } from '../services/storage';
-import { disposableCategories } from './CategorySetupScreen'; // Import default categories
 import { useNotificationTest } from '../contexts/NotificationTestContext';
 import { getRandomMessage } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
@@ -57,6 +56,7 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
       const budgetPreference = await loadFromStorage('userBudgetPreference');
       // Load existing budget and categories to allow editing
       const existingBudget = await loadFromStorage('userBudget');
+      const existingDisposableCategories = await loadFromStorage('disposableUserCategories');
       const existingCategories = await loadFromStorage('userCategories');
 
       if (!session || !budgetPreference) {
@@ -74,9 +74,9 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
           existingCategories: existingCategories,
         });
       } else { // 'disposable'
-        // If they only track disposable, go directly to that setup screen
+        // If they only track disposable, go to the disposable amount setup screen
         navigation.navigate('DisposableSetup', {
-          activeCategories: existingCategories || disposableCategories, // Use saved categories or default
+          activeCategories: existingDisposableCategories, // Pass only the disposable categories
           isGuest: session.isGuest,
           currency: session.currency,
           existingBudget: existingBudget,

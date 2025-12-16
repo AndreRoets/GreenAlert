@@ -35,7 +35,7 @@ export default function DisposableSetupScreen({ route, navigation }) {
     navigation.navigate('LeftoverBudget', {
       unallocated: total,
       paymentDay: parseInt(paymentDay, 10),
-      activeCategories, // Pass categories along
+      activeCategories: activeCategories, // Pass categories along
       isGuest,
       currency,
       existingBudget, // Pass existing budget data along

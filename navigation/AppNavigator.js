@@ -11,6 +11,7 @@ import AuthScreen from '../screens/AuthScreen';
 import CategorySetupScreen from '../screens/CategorySetupScreen';
 import BudgetSetupScreen from '../screens/BudgetSetupScreen';
 import DisposableSetupScreen from '../screens/DisposableSetupScreen';
+import DisposableCategorySetupScreen from '../screens/DisposableCategorySetupScreen';
 import LeftoverBudgetScreen from '../screens/LeftoverBudgetScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import RecurringSpendsScreen from '../screens/RecurringSpendsScreen';
@@ -120,6 +121,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ headerShown: false }} />
         <Stack.Screen name="CategorySetup" component={CategorySetupScreen} options={{ title: 'Setup Categories' }}/>
+        <Stack.Screen name="DisposableCategorySetup" component={DisposableCategorySetupScreen} options={{ title: 'Setup Categories' }} />
         <Stack.Screen name="DisposableSetup" component={DisposableSetupScreen} options={{ title: 'Disposable Income' }} />
         <Stack.Screen name="BudgetSetup" component={BudgetSetupScreen} options={{ title: 'Set Budget' }} />
         <Stack.Screen
