@@ -125,14 +125,20 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         return expDate.getFullYear() === displayDate.getFullYear() &&
                expDate.getMonth() === displayDate.getMonth() &&
                expDate.getDate() === displayDate.getDate();
-      });
-      const recurringSpendsForDay = (budget.recurringSpends || []).filter(
-        spend => spend.selectedDays && spend.selectedDays[dayOfWeek]
+      }).map(e => ({...e, isConfirmed: true})); // Mark these as confirmed
+
+      const potentialRecurringSpends = (budget.recurringSpends || []).filter(
+        spend => spend.selectedDays && spend.selectedDays[dayOfWeek] && spend.amount > 0
       );
-      const recurringTotal = recurringSpendsForDay.reduce((sum, spend) => sum + spend.amount, 0);
+
+      // Filter out recurring spends that have already been confirmed for today
+      const unconfirmedRecurringSpends = potentialRecurringSpends.filter(recSpend => 
+        !oneOffSpendsForDay.some(confSpend => confSpend.recurringSpendId === recSpend.id)
+      );
 
       const oneOffTotal = oneOffSpendsForDay.reduce((sum, exp) => sum + exp.amount, 0);
-      const totalSpends = recurringTotal + oneOffTotal;
+      // Total spends are now ONLY confirmed (one-off) expenses
+      const totalSpends = oneOffTotal;
 
       let dayFunMoneyBudget;
       const currentBudgets = adjustedBudgets.length > 0 ? adjustedBudgets : budget.dailyBudgets;
@@ -165,7 +171,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         daysLeft: daysLeft,
         isWeekly: false,
         isDaily: true,
-        recurringSpendsForView: recurringSpendsForDay,
+        recurringSpendsForView: unconfirmedRecurringSpends, // Show only unconfirmed
         oneOffSpendsForView: oneOffSpendsForDay,
         savingsForView: finalDailySavings,
         isSavingsNegative: finalDailySavings < 0,
@@ -179,11 +185,6 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
 
     if (budget.viewPreference === 'weekly') {
-      // Calculate the weekly amount for each recurring spend and filter out any with no cost.
-      const spendsToDisplay = (budget.recurringSpends || []).map(spend => ({
-        ...spend,
-        amount: spend.amount * (spend.daysPerWeek || 0),
-      })).filter(spend => spend.amount > 0);
 
       const weekStartDate = new Date();
       weekStartDate.setDate(new Date().getDate() + (currentWeek - 1) * 7);
@@ -196,13 +197,23 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const oneOffSpendsForWeek = expenses.filter(exp => {
         const expDate = new Date(exp.date);
         return expDate >= weekStartDate && expDate <= weekEndDate;
-      });
+      }).map(e => ({...e, isConfirmed: true})); // Mark as confirmed
+
+      const potentialRecurringSpends = (budget.recurringSpends || []).map(spend => ({
+        ...spend,
+        // Calculate the weekly amount for each recurring spend
+        amount: spend.amount * (spend.daysPerWeek || 0),
+      })).filter(spend => spend.amount > 0);
+
+      // Filter out recurring spends that have already been confirmed for this week
+      const unconfirmedRecurringSpends = potentialRecurringSpends.filter(recSpend => 
+        !oneOffSpendsForWeek.some(confSpend => confSpend.recurringSpendId === recSpend.id)
+      );
 
       const oneOffTotal = oneOffSpendsForWeek.reduce((sum, exp) => sum + exp.amount, 0);
 
-      const recurringTotal = spendsToDisplay.reduce((total, spend) => total + spend.amount, 0);
-
-      const totalSpends = recurringTotal + oneOffTotal;
+      // Total spends are now ONLY confirmed (one-off) expenses
+      const totalSpends = oneOffTotal;
 
       let weekFunMoneyBudget;
       const currentBudgets = adjustedBudgets.length > 0 ? adjustedBudgets : budget.weeklyBudgets;
@@ -235,7 +246,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         weeksLeft: weeksLeft,
         isWeekly: true,
         isDaily: false,
-        recurringSpendsForView: spendsToDisplay,
+        recurringSpendsForView: unconfirmedRecurringSpends, // Show only unconfirmed
         oneOffSpendsForView: oneOffSpendsForWeek,
         savingsForView: finalWeeklySavings,
         isSavingsNegative: finalWeeklySavings < 0,
@@ -401,6 +412,32 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     );
   };
 
+  const handleConfirmRecurringSpend = (spendToConfirm) => {
+    let expenseDate = new Date();
+    if (budget.viewPreference === 'daily') {
+      expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
+    } else if (budget.viewPreference === 'weekly') {
+      // For weekly, we can just use today's date within the current week
+      expenseDate.setDate(new Date().getDate() + (currentWeek - 1) * 7);
+    }
+
+    const newExpense = {
+      id: Date.now(),
+      amount: spendToConfirm.amount,
+      description: spendToConfirm.description,
+      category: spendToConfirm.category,
+      necessary: true, // Recurring spends are generally considered necessary/planned
+      date: expenseDate.toISOString(),
+      recurringSpendId: spendToConfirm.id, // Link back to the original recurring spend
+    };
+
+    setExpenses(prevExpenses => [...prevExpenses, newExpense]);
+    Alert.alert(
+      "Expense Confirmed",
+      `"${spendToConfirm.description}" has been added to your spends for this period.`
+    );
+  };
+
   if (isLoading || !budget) {
     return (
       <View style={styles.container}>
@@ -453,15 +490,17 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         )}
 
         {budgetDetails.recurringSpendsForView.map((spend, index) => (
-          <View key={`rec-${index}`} style={styles.expenseRow}>
-            <Text style={styles.expenseDescription}>{spend.description}</Text>
-            <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{spend.amount.toFixed(2)}</Text>
-          </View>
+          <TouchableOpacity key={`rec-${index}`} style={[styles.expenseRow, styles.unconfirmedExpenseRow]} onPress={() => handleConfirmRecurringSpend(spend)}>
+            <View style={styles.expenseDetails}>
+              <Text style={styles.expenseDescription}>{spend.description} (Tap to confirm)</Text>
+              <Text style={styles.unconfirmedExpenseAmount}>-{budgetDetails.currency.symbol}{spend.amount.toFixed(2)}</Text>
+            </View>
+          </TouchableOpacity>
         ))}
 
         {budgetDetails.oneOffSpendsForView.map((expense) => (
           <View key={expense.id} style={[styles.expenseRow, !expense.necessary && styles.unnecessaryExpenseRow]}>
-            <View style={styles.expenseDetails}>
+            <View style={[styles.expenseDetails, {flex: 1}]}>
               <Text style={styles.expenseDescription}>{expense.description}</Text>
               <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{expense.amount.toFixed(2)}</Text>
             </View>
@@ -652,14 +691,22 @@ const styles = StyleSheet.create({
   unnecessaryExpenseRow: {
     backgroundColor: 'rgba(255, 65, 54, 0.08)', // Light red hue
   },
+  unconfirmedExpenseRow: {
+    backgroundColor: 'rgba(0, 122, 255, 0.08)', // Light blue hue
+  },
   expenseDetails: {
-    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   expenseDescription: { fontSize: 16, flex: 1 },
   expenseAmount: { fontSize: 16, fontWeight: 'bold', color: '#FF4136', marginLeft: 10 },
+  unconfirmedExpenseAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#888',
+    marginLeft: 10
+  },
   removeExpenseButton: {
     marginLeft: 15,
     padding: 5,

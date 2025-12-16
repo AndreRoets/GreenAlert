@@ -64,7 +64,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
       ...budget,
       recurringSpends: recurringSpends.map(spend => ({
         ...spend,
-        // No longer need to handle applyToAll
+        //  spend.id || `${Date.now()}-${Math.random()}`,
         amount: parseFloat(spend.amount) || 0,
         daysPerWeek: spend.daysPerWeek ? parseInt(spend.daysPerWeek, 10) || 0 : undefined,
       })),
