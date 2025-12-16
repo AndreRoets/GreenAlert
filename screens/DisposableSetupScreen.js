@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 
 export default function DisposableSetupScreen({ route, navigation }) {
-  const { activeCategories, isGuest, currency } = route.params;
+  const { activeCategories, isGuest, currency, existingBudget } = route.params;
 
-  const [disposableIncome, setDisposableIncome] = useState('');
-  const [paymentDay, setPaymentDay] = useState('');
+  const [disposableIncome, setDisposableIncome] = useState(existingBudget?.total?.toString() || '');
+  const [paymentDay, setPaymentDay] = useState(existingBudget?.paymentDay?.toString() || '');
 
   const handleIncomeChange = (amount) => {
     if (/^\d*\.?\d*$/.test(amount)) {
@@ -38,6 +38,7 @@ export default function DisposableSetupScreen({ route, navigation }) {
       activeCategories, // Pass categories along
       isGuest,
       currency,
+      existingBudget, // Pass existing budget data along
     });
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, View, StyleSheet, TouchableOpacity, Text, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import { CommonActions } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -17,6 +18,8 @@ import DisposableDashboardScreen from '../screens/DisposableDashboardScreen';
 import { loadFromStorage } from '../services/storage';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import UserProfileDrawer from '../screens/UserProfileDrawer';
+import { registerForPushNotificationsAsync } from '../services/notificationService';
+import { useNotificationTest } from '../contexts/NotificationTestContext';
 
 const Stack = createStackNavigator();
 
@@ -33,8 +36,41 @@ const clearAsyncStorage = async () => {
 export default function AppNavigator() {
   const [initialRoute, setInitialRoute] = useState(null);
   const [isProfileDrawerVisible, setProfileDrawerVisible] = useState(false);
+  const { testNotification } = useNotificationTest();
 
   useEffect(() => {
+    // --- WORKAROUND FOR EXPO GO ---
+    // This listens for the test pop-up trigger from our context
+    if (testNotification) {
+      console.log('Test pop-up triggered:', testNotification);
+      const { title, body } = testNotification;
+      Alert.alert(title, body, [{ text: 'OK' }]);
+    }
+  }, [testNotification]);
+
+  useEffect(() => {
+    // --- REAL NOTIFICATION LISTENER ---
+    // This will work correctly in a development build or standalone app.
+    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+      const { title, body } = notification.request.content;
+      console.log('Notification received in foreground listener:', notification); // Add this line
+      Alert.alert(title, body, [{ text: 'OK' }]);
+    });
+
+    // Listener for when a user taps on a notification
+    const backgroundSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      // Here you could add logic to navigate to a specific screen if needed
+      console.log('Notification tapped!', response);
+    });
+
+    return () => {
+      foregroundSubscription.remove();
+      backgroundSubscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
     const checkOnboarding = async () => {
       const session = await loadFromStorage('userSession');
       if (session && !session.isGuest) {

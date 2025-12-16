@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import {
   View, Text,
   StyleSheet, TouchableOpacity,
@@ -9,8 +9,11 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { loadFromStorage } from '../services/storage';
+import { scheduleBudgetNotifications } from '../services/notificationService';
+import { useBudget } from '../contexts/BudgetContext';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
   const [budget, setBudget] = useState(null);
@@ -21,11 +24,13 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [lastProcessedExpenseCount, setLastProcessedExpenseCount] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
   const [lastWarningDate, setLastWarningDate] = useState(null);
-  const [newExpense, setNewExpense] = useState({ amount: '', description: '' });
+  const [newExpense, setNewExpense] = useState({ amount: '', description: '', necessary: false });
   const [isLoading, setIsLoading] = useState(true);
+  const { setBudgetDetails } = useBudget();
 
   useEffect(() => {
     const initializeBudget = async () => {
+      console.log("Initializing budget...");
       setIsLoading(true);
       let initialBudget;
       if (route.params?.budget) {
@@ -52,6 +57,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         label: 'Loading...',
         currency: { symbol: '$' },
         recurringSpendsForView: [],
+        status: 'green',
         oneOffSpendsForView: [],
         savingsForView: 0,
         overspentAmount: 0,
@@ -66,6 +72,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         isDaily: false,
         isWeekly: false,
         recurringSpendsForView: [],
+        status: 'green',
         oneOffSpendsForView: [],
         savingsForView: 0,
         overspentAmount: 0,
@@ -130,11 +137,14 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const overspentAmount = finalFunMoney < 0 ? Math.abs(finalFunMoney) : 0;
       const finalDailySavings = dailySavingsBudget - overspentAmount;
 
+      let status = 'green';
       let statusColor = '#32CD32'; // green
       if (finalFunMoney < 0) {
+        status = 'red';
         statusColor = '#FF4136'; // red
       } else if (dayFunMoneyBudget > 0 && finalFunMoney <= dayFunMoneyBudget / 3) {
         statusColor = '#FFD700'; // yellow
+        status = 'yellow';
       }
 
       return {
@@ -149,6 +159,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         isSavingsNegative: finalDailySavings < 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
         overspentAmount: overspentAmount,
+        status: status,
         statusColor: statusColor,
       };
     }
@@ -196,11 +207,14 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const overspentAmount = finalFunMoney < 0 ? Math.abs(finalFunMoney) : 0;
       const finalWeeklySavings = weeklySavingsBudget - overspentAmount;
 
+      let status = 'green';
       let statusColor = '#32CD32'; // green
       if (finalFunMoney < 0) {
+        status = 'red';
         statusColor = '#FF4136'; // red
       } else if (weekFunMoneyBudget > 0 && finalFunMoney <= weekFunMoneyBudget / 3) {
         statusColor = '#FFD700'; // yellow
+        status = 'yellow';
       }
 
       return {
@@ -215,6 +229,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         isSavingsNegative: finalWeeklySavings < 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
         overspentAmount: overspentAmount,
+        status: status,
         statusColor: statusColor,
       };
     }
@@ -225,6 +240,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       isWeekly: false,
       isDaily: false,
       recurringSpendsForView: [],
+      status: 'green',
       oneOffSpendsForView: [],
       savingsForView: 0,
       isSavingsNegative: false,
@@ -233,6 +249,17 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       overspentAmount: 0,
     };
   }, [budget, adjustedBudgets, currentDay, currentWeek, expenses]);
+
+  useEffect(() => {
+    // Update the global context with the latest budget details
+    setBudgetDetails(budgetDetails);
+  }, [budgetDetails, setBudgetDetails]);
+
+  useEffect(() => {
+    if (budgetDetails.status) {
+      scheduleBudgetNotifications(budgetDetails.status);
+    }
+  }, [budgetDetails.status]);
 
   useEffect(() => {
     if (budgetDetails.statusColor === '#FFD700') {
@@ -337,9 +364,27 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     if (budget.viewPreference === 'daily') {
       expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
     }
-    setExpenses([...expenses, { id: Date.now(), amount, description: newExpense.description, date: expenseDate.toISOString() }]);
-    setNewExpense({ amount: '', description: '' });
+    setExpenses([...expenses, { id: Date.now(), amount, description: newExpense.description, necessary: newExpense.necessary, date: expenseDate.toISOString() }]);
+    setNewExpense({ amount: '', description: '', necessary: false });
     setModalVisible(false);
+  };
+
+  const handleRemoveExpense = (expenseId) => {
+    Alert.alert(
+      "Remove Expense",
+      "Are you sure you want to remove this expense?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Remove",
+          onPress: () => setExpenses(currentExpenses => currentExpenses.filter(exp => exp.id !== expenseId)),
+          style: "destructive"
+        }
+      ]
+    );
   };
 
   if (isLoading || !budget) {
@@ -401,9 +446,14 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         ))}
 
         {budgetDetails.oneOffSpendsForView.map((expense) => (
-          <View key={expense.id} style={styles.expenseRow}>
-            <Text style={styles.expenseDescription}>{expense.description}</Text>
-            <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{expense.amount.toFixed(2)}</Text>
+          <View key={expense.id} style={[styles.expenseRow, !expense.necessary && styles.unnecessaryExpenseRow]}>
+            <View style={styles.expenseDetails}>
+              <Text style={styles.expenseDescription}>{expense.description}</Text>
+              <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{expense.amount.toFixed(2)}</Text>
+            </View>
+            <TouchableOpacity onPress={() => handleRemoveExpense(expense.id)} style={styles.removeExpenseButton}>
+              <Text style={styles.removeExpenseButtonText}>✕</Text>
+            </TouchableOpacity>
           </View>
         ))}
 
@@ -436,6 +486,14 @@ export default function DisposableDashboardScreen({ route, navigation }) {
               value={newExpense.description}
               onChangeText={(text) => setNewExpense({ ...newExpense, description: text })}
             />
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Was this necessary?</Text>
+              <Switch
+                trackColor={{ false: "#767577", true: "#32CD32" }}
+                thumbColor={"#f4f3f4"}
+                onValueChange={(value) => setNewExpense({ ...newExpense, necessary: value })}
+                value={newExpense.necessary} />
+            </View>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
@@ -538,12 +596,34 @@ const styles = StyleSheet.create({
   expenseRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 15,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
-  expenseDescription: { fontSize: 16 },
-  expenseAmount: { fontSize: 16, fontWeight: 'bold', color: '#FF4136' },
+  unnecessaryExpenseRow: {
+    backgroundColor: 'rgba(255, 65, 54, 0.08)', // Light red hue
+  },
+  expenseDetails: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expenseDescription: { fontSize: 16, flex: 1 },
+  expenseAmount: { fontSize: 16, fontWeight: 'bold', color: '#FF4136', marginLeft: 10 },
+  removeExpenseButton: {
+    marginLeft: 15,
+    padding: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeExpenseButtonText: {
+    fontSize: 24,
+    color: '#AAAAAA',
+    fontWeight: 'bold',
+  },
   placeholder: {
     flex: 1,
     justifyContent: 'center',
@@ -584,6 +664,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     paddingVertical: 10,
     marginBottom: 20,
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 25,
+    paddingHorizontal: 5,
+  },
+  switchLabel: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '500',
   },
   modalButtonContainer: {
     flexDirection: 'row',

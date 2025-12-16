@@ -3,12 +3,20 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Keyboa
 import { saveToStorage } from '../services/storage';
 
 export default function BudgetSetupScreen({ route, navigation }) {
-  const { activeCategories, isGuest, currency } = route.params;
+  const { activeCategories, isGuest, currency, existingBudget } = route.params;
 
-  const [totalBudget, setTotalBudget] = useState('');
-  const [paymentDay, setPaymentDay] = useState('');
+  // Initialize state with existing budget data if it exists
+  const [totalBudget, setTotalBudget] = useState(existingBudget?.totalBudget?.toString() || '');
+  const [paymentDay, setPaymentDay] = useState(existingBudget?.paymentDay?.toString() || '');
   const [categoryBudgets, setCategoryBudgets] = useState(
-    activeCategories.reduce((acc, cat) => ({ ...acc, [cat]: '' }), {})
+    activeCategories.reduce((acc, cat) => {
+      const existingAmount = existingBudget?.categoryBudgets?.[cat];
+      return {
+        ...acc,
+        // Use existing amount if it's a positive number, otherwise default to empty string
+        [cat]: (existingAmount && existingAmount > 0) ? existingAmount.toString() : ''
+      };
+    }, {})
   );
 
   const handleCategoryChange = (category, amount) => {
