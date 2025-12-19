@@ -19,6 +19,7 @@ import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
+import { useCurrentDate } from '../hooks/useCurrentDate';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
   const [budget, setBudget] = useState(null);
@@ -34,6 +35,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const { setBudgetDetails } = useBudget();
   const [categories, setCategories] = useState([]);
+  const today = useCurrentDate();
 
   const colorScheme = useColorScheme();
   const theme = COLORS[colorScheme];
@@ -102,7 +104,6 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     }
 
     const calculateDaysLeft = () => {
-      const today = new Date();
       const currentDay = today.getDate();
       let periodEndDate;
       if (currentDay < budget.paymentDay) {
@@ -124,7 +125,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     const totalSavings = budget.savingsGoal || 0;
 
     if (budget.viewPreference === 'daily') {
-      const displayDate = new Date();
+      const displayDate = new Date(today);
       displayDate.setDate(displayDate.getDate() + currentDay - 1);
       const dayOfWeek = displayDate.getDay(); // 0 for Sun, 1 for Mon, etc.
 
@@ -194,11 +195,11 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
     if (budget.viewPreference === 'weekly') {
 
-      const weekStartDate = new Date();
-      weekStartDate.setDate(new Date().getDate() + (currentWeek - 1) * 7);
+      const weekStartDate = new Date(today);
+      weekStartDate.setDate(today.getDate() + (currentWeek - 1) * 7);
       weekStartDate.setHours(0, 0, 0, 0);
 
-      const weekEndDate = new Date(weekStartDate);
+      const weekEndDate = new Date(today);
       weekEndDate.setDate(weekStartDate.getDate() + 6);
       weekEndDate.setHours(23, 59, 59, 999);
 
@@ -279,7 +280,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       statusColor: COLORS.success,
       overspentAmount: 0,
     };
-  }, [budget, adjustedBudgets, currentDay, currentWeek, expenses]);
+  }, [budget, adjustedBudgets, currentDay, currentWeek, expenses, today]);
 
   useEffect(() => {
     // Update the global context with the latest budget details
@@ -374,14 +375,14 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   const getDailyDateText = () => {
-    const displayDate = new Date();
+    const displayDate = new Date(today);
     displayDate.setDate(displayDate.getDate() + currentDay - 1);
     return formatDate(displayDate);
   };
 
   const getWeeklyDateText = () => {
-    const weekStartDate = new Date();
-    weekStartDate.setDate(new Date().getDate() + (currentWeek - 1) * 7);
+    const weekStartDate = new Date(today);
+    weekStartDate.setDate(today.getDate() + (currentWeek - 1) * 7);
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekStartDate.getDate() + 6);
     return `${formatDate(weekStartDate)} - ${formatDate(weekEndDate)}`;
@@ -393,7 +394,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       Alert.alert('Invalid Expense', 'Please enter a valid amount, description, and category.');
       return;
     }
-    let expenseDate = new Date();
+    let expenseDate = new Date(today);
     if (budget.viewPreference === 'daily') {
       expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
     }
@@ -421,12 +422,12 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   };
 
   const handleConfirmRecurringSpend = (spendToConfirm) => {
-    let expenseDate = new Date();
+    let expenseDate = new Date(today);
     if (budget.viewPreference === 'daily') {
       expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
     } else if (budget.viewPreference === 'weekly') {
       // For weekly, we can just use today's date within the current week
-      expenseDate.setDate(new Date().getDate() + (currentWeek - 1) * 7);
+      expenseDate.setDate(today.getDate() + (currentWeek - 1) * 7);
     }
 
     const newExpense = {

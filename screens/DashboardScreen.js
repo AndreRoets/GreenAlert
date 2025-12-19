@@ -5,6 +5,7 @@ import { loadFromStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppButton from '../components/AppButton';
+import { useCurrentDate } from '../hooks/useCurrentDate';
 import AppCard from './AppCard';
 
 export default function DashboardScreen({ route, navigation }) {
@@ -13,6 +14,7 @@ export default function DashboardScreen({ route, navigation }) {
   const [isGuest, setIsGuest] = useState(true);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
+  const today = useCurrentDate();
 
   const colorScheme = useColorScheme();
   const theme = COLORS[colorScheme];
@@ -39,12 +41,10 @@ export default function DashboardScreen({ route, navigation }) {
     if (isFocused) {
       fetchBudgetData();
     }
-  }, [isFocused]);
+  }, [isFocused, route.params]);
 
   const calculateDaysLeft = (paymentDay) => {
     if (!paymentDay) return 0;
-
-    const today = new Date();
     const currentDay = today.getDate();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
@@ -65,7 +65,7 @@ export default function DashboardScreen({ route, navigation }) {
     const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  const daysLeft = budgetData ? calculateDaysLeft(budgetData.paymentDay) : 0;
+  const daysLeft = budgetData ? calculateDaysLeft(budgetData.paymentDay, today) : 0;
   const budgetStatus = 'green'; // 'green', 'yellow', or 'red'
 
   const allocated = budgetData ? Object.values(budgetData.categoryBudgets).reduce((sum, val) => sum + val, 0) : 0;

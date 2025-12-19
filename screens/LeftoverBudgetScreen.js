@@ -6,6 +6,7 @@ import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
+import { useCurrentDate } from '../hooks/useCurrentDate';
 
 export default function LeftoverBudgetScreen({ route, navigation }) {
   const { unallocated, paymentDay, activeCategories, isGuest, currency } = route.params;
@@ -20,13 +21,13 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
   // This flag tracks if the user has entered the customization modal
   const [hasCustomized, setHasCustomized] = useState(false);
 
+  const today = useCurrentDate();
   const colorScheme = useColorScheme();
   const theme = COLORS[colorScheme];
 
-  const calculateDaysLeft = (payDay) => {
+  const calculateDaysLeft = useMemo(() => {
     if (!payDay) return 0;
 
-    const today = new Date();
     const currentDay = today.getDate();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
@@ -42,9 +43,9 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
     // Set time to the end of the day to include the last day fully
     periodEndDate.setHours(23, 59, 59, 999);
     const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
+  }, [paymentDay, today]);
 
-  const daysLeft = calculateDaysLeft(paymentDay);
+  const daysLeft = calculateDaysLeft;
   const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
 
   const savingsAmount = parseFloat(savingsGoal) || 0;
@@ -136,8 +137,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
   };
 
   const formatDateForDay = (dayIndex) => {
-    const date = new Date();
-    date.setDate(date.getDate() + dayIndex);
+    const date = new Date(today.getTime());    date.setDate(today.getDate() + dayIndex);
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 

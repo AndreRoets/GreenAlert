@@ -8,17 +8,18 @@ import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
+import { useCurrentDate } from '../hooks/useCurrentDate';
 
 const dayShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function RecurringSpendsScreen({ route, navigation }) {
   const { budget, activeCategories, isGuest, currency } = route.params;
   const [recurringSpends, setRecurringSpends] = useState([]);
+  const today = useCurrentDate();
 
   const daysInPeriod = useMemo(() => {
     if (budget.viewPreference !== 'daily') return [];
 
-    const today = new Date();
     const currentDay = today.getDate();
     let periodEndDate;
     if (currentDay < budget.paymentDay) {
@@ -32,11 +33,11 @@ export default function RecurringSpendsScreen({ route, navigation }) {
     const numberOfDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
     return Array.from({ length: numberOfDays }, (_, i) => {
-      const date = new Date();
+      const date = new Date(today.getTime());
       date.setDate(today.getDate() + i);
       return date;
     });
-  }, [budget.paymentDay, budget.viewPreference]);
+  }, [budget.paymentDay, budget.viewPreference, today]);
 
   const addSpend = () => {
     setRecurringSpends([...recurringSpends, {
