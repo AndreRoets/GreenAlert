@@ -296,17 +296,17 @@ const styles = StyleSheet.create({
   modalContainer: { flex: 1, paddingTop: 40 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   scrollContainer: { padding: SIZES.padding, alignItems: 'center' },
-  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
-  subHeader: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding },
-  bold: { fontWeight: 'bold', color: COLORS.light.text },
+  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.padding },
+  subHeader: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding }, // This color is fine as it's a base for the theme
+  bold: { fontWeight: 'bold' }, // Color will be inherited from AppText
   optionsContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: SIZES.base },
   optionButton: { width: '48%', marginVertical: 0 },
   leftoverContainer: { alignItems: 'center', marginBottom: SIZES.base },
-  leftoverLabel: { ...FONTS.h4, color: COLORS.light.textSecondary },
+  leftoverLabel: { ...FONTS.h4, color: COLORS.light.textSecondary }, // This color is fine as it's a base for the theme
   leftoverAmount: { ...FONTS.h1, marginVertical: SIZES.base },
-  remainingText: { ...FONTS.body4, color: COLORS.light.textSecondary },
+  remainingText: { ...FONTS.body4, color: COLORS.light.textSecondary }, // This color is fine as it's a base for the theme
   resultContainer: { alignItems: 'center', width: '100%', marginTop: SIZES.padding },
-  resultLabel: { ...FONTS.h4, color: COLORS.light.textSecondary, marginBottom: SIZES.base },
+  resultLabel: { ...FONTS.h4, color: COLORS.light.textSecondary, marginBottom: SIZES.base }, // This color is fine as it's a base for the theme
   resultAmount: { ...FONTS.h1, color: COLORS.success, marginBottom: SIZES.padding },
   resultRow: { alignItems: 'center', width: '100%' },
   allocationSummary: {

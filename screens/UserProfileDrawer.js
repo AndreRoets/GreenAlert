@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Modal, View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { loadFromStorage } from '../services/storage';
 import { useNotificationTest } from '../contexts/NotificationTestContext';
 import { getRandomMessage } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppButton from '../components/AppButton';
 
 export default function UserProfileDrawer({ isVisible, onClose }) {
   const navigation = useNavigation();
@@ -13,6 +16,9 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
   const [loading, setLoading] = useState(true);
   const { triggerTestNotification } = useNotificationTest();
   const { budgetDetails } = useBudget();
+
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -90,44 +96,38 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
 
   const renderContent = () => {
     if (loading) {
-      return <ActivityIndicator size="large" color="#000000" />;
+      return <ActivityIndicator size="large" color={COLORS.primary} />;
     }
 
     if (!user) {
-      return <Text style={styles.infoText}>Could not load user profile.</Text>;
+      return <AppText style={styles.infoText}>Could not load user profile.</AppText>;
     }
 
     return (
       <>
         <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user.firstName?.[0] || 'G'}</Text>
+          <View style={[styles.avatar, { backgroundColor: COLORS.primary }]}>
+            <AppText style={styles.avatarText}>{user.firstName?.[0] || 'G'}</AppText>
           </View>
-          <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-          <Text style={styles.email}>{user.email}</Text>
+          <AppText style={styles.name}>{user.firstName} {user.lastName}</AppText>
+          <AppText style={styles.email}>{user.email}</AppText>
         </View>
-        {/* You can add more profile items here, like "Settings", "Logout", etc. */}
 
-        <TouchableOpacity style={styles.testButton} onPress={handleTestNotification} >
-          <Text style={styles.testButtonText}>Test Current Status Pop-up</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.testButton, styles.setupButton]} onPress={handleGoToSetup} >
-          <Text style={styles.testButtonText}>Go Back to Setup</Text>
-        </TouchableOpacity> 
+        <AppButton title="Test Status Pop-up" onPress={handleTestNotification} />
+        <AppButton title="Go Back to Setup" onPress={handleGoToSetup} variant="secondary" />
       </>
     );
   };
 
   return (
     <Modal
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       visible={isVisible}
       onRequestClose={onClose}
     >
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <View style={styles.drawerContainer}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPressOut={onClose}>
+        <View style={[styles.drawerContainer, { backgroundColor: theme.background }]}>
           <SafeAreaView style={{ flex: 1 }}>
             {renderContent()}
           </SafeAreaView>
@@ -145,60 +145,41 @@ const styles = StyleSheet.create({
   drawerContainer: {
     width: '80%',
     height: '100%',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
+    padding: SIZES.padding,
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
+    shadowOffset: { width: -4, height: 0 },
     shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowRadius: 10,
     elevation: 5,
   },
   profileHeader: {
     alignItems: 'center',
-    marginBottom: 30,
-    paddingTop: 40,
+    marginBottom: SIZES.padding * 2,
+    paddingTop: SIZES.padding,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: SIZES.padding,
   },
   avatarText: {
-    color: '#FFFFFF',
-    fontSize: 36,
-    fontWeight: 'bold',
+    ...FONTS.h1,
+    color: 'white',
   },
   name: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    ...FONTS.h3,
   },
   email: {
-    fontSize: 16,
-    color: '#666',
+    ...FONTS.body4,
+    color: COLORS.light.textSecondary,
   },
   infoText: {
+    ...FONTS.body3,
     textAlign: 'center',
     marginTop: 50,
-    fontSize: 16,
-  },
-  testButton: {
-    marginTop: 30,
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  testButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  setupButton: {
-    backgroundColor: '#555', // A different color to distinguish
-    marginTop: 15,
+    color: COLORS.light.textSecondary,
   },
 });

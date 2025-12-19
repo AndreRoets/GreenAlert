@@ -94,13 +94,8 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: SIZES.padding,
   },
-  inputLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  input: {
-  },
+  inputLabel: { ...FONTS.h4, marginBottom: SIZES.base * 1.5 },
+  input: {},
   footer: {
     padding: SIZES.padding,
     borderTopWidth: 1,

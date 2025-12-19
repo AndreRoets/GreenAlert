@@ -91,7 +91,7 @@ export default function DashboardScreen({ route, navigation }) {
           {currency.symbol}{unallocated.toFixed(2)}
         </AppText>
         <AppText style={styles.subAmount}>out of {currency.symbol}{totalBudget.toFixed(2)} total budget</AppText>
-        <View style={styles.daysLeftContainer}>
+        <View style={[styles.daysLeftContainer, { backgroundColor: theme.background }]}>
           <AppText style={styles.daysLeft}>{daysLeft} Days Left</AppText>
         </View>
       </AppCard>
@@ -133,7 +133,6 @@ const styles = StyleSheet.create({
     marginTop: SIZES.padding,
     paddingVertical: SIZES.base,
     paddingHorizontal: SIZES.padding,
-    backgroundColor: COLORS.light.background,
     borderRadius: SIZES.radius,
   },
   daysLeft: { ...FONTS.h4 },
