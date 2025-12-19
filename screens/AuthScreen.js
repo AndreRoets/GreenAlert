@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     padding: SIZES.padding,
   },
   header: { ...FONTS.h1, marginBottom: SIZES.base },
-  subHeader: { ...FONTS.h3, marginBottom: SIZES.padding * 2, color: COLORS.light.textSecondary },
+  subHeader: { ...FONTS.h3, marginBottom: SIZES.padding * 2 },
   inputGroup: { width: '100%', marginBottom: SIZES.padding },
   currencyButton: {
     width: '100%',

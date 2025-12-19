@@ -174,12 +174,10 @@ const styles = StyleSheet.create({
   },
   email: {
     ...FONTS.body4,
-    color: COLORS.light.textSecondary,
   },
   infoText: {
     ...FONTS.body3,
     textAlign: 'center',
     marginTop: 50,
-    color: COLORS.light.textSecondary,
   },
 });

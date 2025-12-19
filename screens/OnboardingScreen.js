@@ -57,7 +57,6 @@ const styles = StyleSheet.create({
   header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
   subHeader: {
     ...FONTS.h4,
-    color: COLORS.light.textSecondary,
     textAlign: 'center',
     marginBottom: SIZES.padding * 2,
   },

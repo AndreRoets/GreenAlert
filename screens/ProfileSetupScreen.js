@@ -79,6 +79,6 @@ const styles = StyleSheet.create({
   },
   headerContainer: { alignItems: 'center', marginBottom: SIZES.padding * 2 },
   title: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
-  subtitle: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center' },
+  subtitle: { ...FONTS.body3, textAlign: 'center' },
   inputContainer: { width: '100%', marginBottom: SIZES.padding },
 });

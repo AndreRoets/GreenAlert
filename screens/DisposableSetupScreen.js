@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContainer: { padding: SIZES.padding, flex: 1, justifyContent: 'center' },
   header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base * 2 },
-  body: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding * 2, alignSelf: 'center' },
+  body: { ...FONTS.body3, textAlign: 'center', marginBottom: SIZES.padding * 2, alignSelf: 'center' },
   inputGroup: {
     marginBottom: SIZES.padding,
   },

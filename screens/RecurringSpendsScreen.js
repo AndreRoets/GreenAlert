@@ -183,7 +183,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: SIZES.padding },
   header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
-  subHeader: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding },
+  subHeader: { ...FONTS.body3, textAlign: 'center', marginBottom: SIZES.padding },
   spendItem: {
     marginBottom: SIZES.padding,
   },

@@ -112,7 +112,7 @@ export default function DisposableCategorySetupScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: SIZES.padding },
   header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
-  body: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding },
+  body: { ...FONTS.body3, textAlign: 'center', marginBottom: SIZES.padding },
   categoryList: { flex: 1, width: '100%' },
   customCategoryContainer: { flexDirection: 'row', width: '100%', marginBottom: SIZES.padding },
   customCategoryInput: { flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0, marginRight: -1 },

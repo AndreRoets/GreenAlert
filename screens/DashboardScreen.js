@@ -125,10 +125,10 @@ export default function DashboardScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: SIZES.padding },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  summaryContainer: { alignItems: 'center', marginBottom: SIZES.padding },
-  label: { ...FONTS.h4, color: COLORS.light.textSecondary },
+  summaryContainer: { alignItems: 'center', marginBottom: SIZES.padding, },
+  label: { ...FONTS.h4 },
   amount: { ...FONTS.h1, fontSize: 64, marginVertical: SIZES.base },
-  subAmount: { ...FONTS.body3, color: COLORS.light.textSecondary },
+  subAmount: { ...FONTS.body3 },
   daysLeftContainer: {
     marginTop: SIZES.padding,
     paddingVertical: SIZES.base,
