@@ -9,8 +9,8 @@ export default function AddExpenseScreen() {
 
       {/* Placeholder for form inputs */}
       <View style={styles.form}>
-        <TextInput style={styles.input} placeholder="Amount ($)" keyboardType="numeric" />
-        <TextInput style={styles.input} placeholder="Description (e.g., Coffee)" />
+        <TextInput style={styles.input} placeholder="Amount ($)" placeholderTextColor="#777777" keyboardType="numeric" />
+        <TextInput style={styles.input} placeholder="Description (e.g., Coffee)" placeholderTextColor="#777777" />
         <Text style={styles.riskLabel}>Assess The Risk:</Text>
         {/* Placeholder for risk buttons */}
         <View style={styles.riskButtons}>

@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Alert, Modal, FlatList } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Modal, FlatList, useColorScheme } from 'react-native';
 import { saveToStorage } from '../services/storage';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
 
 // A more comprehensive list of world currencies with names
+// prettier-ignore
 const currencies = [
   { name: 'United States Dollar', code: 'USD', symbol: '$' }, { name: 'Euro', code: 'EUR', symbol: '€' }, { name: 'British Pound', code: 'GBP', symbol: '£' }, { name: 'Japanese Yen', code: 'JPY', symbol: '¥' }, { name: 'Canadian Dollar', code: 'CAD', symbol: 'C$' }, { name: 'Australian Dollar', code: 'AUD', symbol: 'A$' }, { name: 'Swiss Franc', code: 'CHF', symbol: 'CHF' }, { name: 'Indian Rupee', code: 'INR', symbol: '₹' }, { name: 'South African Rand', code: 'ZAR', symbol: 'R' },
   { name: 'UAE Dirham', code: 'AED', symbol: 'د.إ' }, { name: 'Afghan Afghani', code: 'AFN', symbol: '؋' }, { name: 'Albanian Lek', code: 'ALL', symbol: 'L' }, { name: 'Armenian Dram', code: 'AMD', symbol: '֏' }, { name: 'Netherlands Antillean Guilder', code: 'ANG', symbol: 'ƒ' }, { name: 'Angolan Kwanza', code: 'AOA', symbol: 'Kz' }, { name: 'Argentine Peso', code: 'ARS', symbol: '$' },
@@ -35,6 +40,9 @@ export default function AuthScreen({ navigation }) {
   const [currency, setCurrency] = useState(currencies[0]); // Default to USD
   const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
 
   const handleSignUp = async () => {
     // Basic validation
@@ -72,43 +80,41 @@ export default function AuthScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <Text style={styles.header}>GreenAlert</Text>
-      <Text style={styles.subHeader}>Welcome!</Text>
+      <AppText style={styles.header}>GreenAlert</AppText>
+      <AppText style={styles.subHeader}>Welcome!</AppText>
 
       <View style={styles.inputGroup}>
-        <TextInput
-          style={styles.input}
+        <AppInput
           placeholder="Email"
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
         />
-        <TextInput
-          style={styles.input}
+        <AppInput
           placeholder="Password"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
+          style={{ marginTop: SIZES.base * 2 }}
         />
       </View>
 
-      <TouchableOpacity style={styles.currencyButton} onPress={() => setCurrencyModalVisible(true)}>
-        <Text style={styles.currencyButtonText}>
+      <TouchableOpacity
+        style={[styles.currencyButton, { borderColor: theme.border }]}
+        onPress={() => setCurrencyModalVisible(true)}
+      >
+        <AppText style={styles.currencyButtonText}>
           Currency: {currency.code} ({currency.symbol})
-        </Text>
+        </AppText>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
+      <AppButton title="Sign Up" onPress={handleSignUp} />
+      <AppButton title="Continue as Guest" onPress={handleGuest} variant="secondary" />
 
-      <TouchableOpacity style={[styles.button, styles.guestButton]} onPress={handleGuest}>
-        <Text style={[styles.buttonText, styles.guestButtonText]}>Continue as Guest</Text>
-      </TouchableOpacity>
 
       <Modal
         animationType="slide"
@@ -119,62 +125,55 @@ export default function AuthScreen({ navigation }) {
           setSearchQuery(''); // Reset search on close
         }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Select Currency</Text>
-            <TextInput
-              style={styles.searchInput}
+        <KeyboardAvoidingView behavior="padding" style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <AppText style={styles.modalHeader}>Select Currency</AppText>
+            <AppInput
               placeholder="Search by country or currency code..."
               value={searchQuery}
               onChangeText={setSearchQuery}
+              style={{ marginBottom: SIZES.base * 2 }}
             />
             <FlatList
               data={filteredCurrencies}
               keyExtractor={(item) => item.code}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.currencyItem} onPress={() => {
+                <TouchableOpacity style={[styles.currencyItem, { borderBottomColor: theme.border }]} onPress={() => {
                   setCurrency(item);
                   setCurrencyModalVisible(false);
                   setSearchQuery(''); // Reset search on select
                 }}>
-                  <Text style={styles.currencyItemText}>{item.name} ({item.code}, {item.symbol})</Text>
+                  <AppText style={styles.currencyItemText}>{item.name} ({item.code}, {item.symbol})</AppText>
                 </TouchableOpacity>
               )} />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 20 },
-  header: { fontSize: 48, fontWeight: 'bold', color: '#000000', marginBottom: 10 },
-  subHeader: { fontSize: 24, color: '#555555', marginBottom: 50 },
-  inputGroup: { width: '100%', marginBottom: 20 },
-  input: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    fontSize: 18,
-    paddingVertical: 15,
-    marginBottom: 20,
-    width: '100%',
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SIZES.padding,
   },
-  button: { backgroundColor: '#000000', paddingVertical: 15, width: '100%', alignItems: 'center', marginBottom: 15 },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  guestButton: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#000000' },
-  guestButtonText: { color: '#000000' },
+  header: { ...FONTS.h1, marginBottom: SIZES.base },
+  subHeader: { ...FONTS.h3, marginBottom: SIZES.padding * 2, color: COLORS.light.textSecondary },
+  inputGroup: { width: '100%', marginBottom: SIZES.padding },
   currencyButton: {
     width: '100%',
-    paddingVertical: 15,
+    height: 55,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ccc',
-    marginBottom: 20,
+    borderWidth: 1,
+    borderRadius: SIZES.radius,
+    marginBottom: SIZES.padding,
   },
   currencyButtonText: {
     fontSize: 16,
-    color: '#333',
   },
   modalOverlay: {
     flex: 1,
@@ -182,30 +181,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%', // Increased height for search bar
+    padding: SIZES.padding,
+    borderTopLeftRadius: SIZES.radius * 2,
+    borderTopRightRadius: SIZES.radius * 2,
+    maxHeight: '80%',
   },
   modalHeader: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    ...FONTS.h3,
+    marginBottom: SIZES.padding,
     textAlign: 'center',
-  },
-  searchInput: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 15,
   },
   currencyItem: {
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
-  currencyItemText: { fontSize: 18, textAlign: 'center' },
+  currencyItemText: {
+    ...FONTS.body3,
+    textAlign: 'center',
+  },
 });

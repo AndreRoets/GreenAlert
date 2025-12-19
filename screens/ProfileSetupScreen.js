@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform, useColorScheme } from 'react-native';
 import { saveToStorage, loadFromStorage } from '../services/storage';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
 
 export default function ProfileSetupScreen({ route, navigation }) {
   const { userId, email } = route.params; // Get user info passed from SignUpScreen
@@ -33,32 +37,36 @@ export default function ProfileSetupScreen({ route, navigation }) {
     }
   };
 
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <Text style={styles.title}>Just a little more about you...</Text>
-      <Text style={styles.subtitle}>Enter your name to personalize your experience.</Text>
+      <View style={styles.headerContainer}>
+        <AppText style={styles.title}>Just a little more about you...</AppText>
+        <AppText style={styles.subtitle}>Enter your name to personalize your experience.</AppText>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="First Name"
-        autoCapitalize="words"
-        value={firstName}
-        onChangeText={setFirstName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name"
-        autoCapitalize="words"
-        value={lastName}
-        onChangeText={setLastName}
-      />
+      <View style={styles.inputContainer}>
+        <AppInput
+          placeholder="First Name"
+          autoCapitalize="words"
+          value={firstName}
+          onChangeText={setFirstName}
+        />
+        <AppInput
+          placeholder="Last Name"
+          autoCapitalize="words"
+          value={lastName}
+          onChangeText={setLastName}
+          style={{ marginTop: SIZES.base * 2 }}
+        />
+      </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSaveProfile}>
-        <Text style={styles.buttonText}>Save Profile</Text>
-      </TouchableOpacity>
+      <AppButton title="Save Profile" onPress={handleSaveProfile} />
     </KeyboardAvoidingView>
   );
 }
@@ -67,43 +75,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    padding: 20,
+    padding: SIZES.padding,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    marginBottom: 15,
-    backgroundColor: '#FFF',
-  },
-  button: {
-    backgroundColor: '#000000',
-    padding: 15,
-    borderRadius: 8,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  headerContainer: { alignItems: 'center', marginBottom: SIZES.padding * 2 },
+  title: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
+  subtitle: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center' },
+  inputContainer: { width: '100%', marginBottom: SIZES.padding },
 });

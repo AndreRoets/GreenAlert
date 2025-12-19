@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, TextInput } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, useColorScheme, Platform } from 'react-native';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
 
 const defaultDisposableCategories = [
   'Food & Drinks', 'Transport', 'Personal & Lifestyle', 'Social & Gifts', 'Miscellaneous'
@@ -62,57 +66,59 @@ export default function DisposableCategorySetupScreen({ route, navigation }) {
 
   const renderCategory = (category) => (
     <View key={category} style={styles.categoryRow}>
-      <Text style={styles.categoryText}>{category}</Text>
+      <AppText style={styles.categoryText}>{category}</AppText>
       <Switch
-        trackColor={{ false: "#767577", true: "#32CD32" }}
-        thumbColor={categories[category] ? "#f4f3f4" : "#f4f3f4"}
+        trackColor={{ false: COLORS.dark.border, true: COLORS.primary }}
+        thumbColor={Platform.OS === 'android' ? COLORS.primary : ''}
         onValueChange={() => toggleCategory(category)}
         value={categories[category]}
       />
     </View>
   );
 
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Categorize Your Spending</Text>
-      <Text style={styles.body}>Select the categories for your disposable income. You can add your own.</Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <AppText style={styles.header}>Categorize Your Spending</AppText>
+      <AppText style={styles.body}>Select the categories for your disposable income. You can add your own.</AppText>
 
       <View style={styles.customCategoryContainer}>
-        <TextInput
+        <AppInput
           style={styles.customCategoryInput}
           placeholder="Add a custom category..."
           value={customCategory}
           onChangeText={setCustomCategory}
           onSubmitEditing={handleAddCustomCategory}
         />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddCustomCategory}>
-          <Text style={styles.addButtonText}>Add</Text>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddCustomCategory} disabled={!customCategory.trim()}>
+          <AppText style={styles.addButtonText}>Add</AppText>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.categoryList}>
+      <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
         {Object.keys(categories).sort().map(renderCategory)}
       </ScrollView>
 
-      <TouchableOpacity style={styles.button} onPress={handleDone}>
-        <Text style={styles.buttonText}>Next</Text>
-      </TouchableOpacity>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <AppButton title="Next" onPress={handleDone} />
+      </View>
     </View>
   );
 }
 
 // Using styles from CategorySetupScreen for consistency
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', backgroundColor: '#FFFFFF', padding: 20, paddingTop: 20 },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#000000', marginBottom: 15, textAlign: 'center' },
-  body: { fontSize: 16, color: '#333', textAlign: 'center', marginBottom: 20, maxWidth: '90%' },
-  categoryList: { flex: 1, width: '90%', marginTop: 10 },
-  customCategoryContainer: { flexDirection: 'row', width: '90%', marginBottom: 20 },
-  customCategoryInput: { flex: 1, borderWidth: 1, borderColor: '#DDD', paddingHorizontal: 15, paddingVertical: 10, fontSize: 16, borderTopLeftRadius: 8, borderBottomLeftRadius: 8 },
-  addButton: { backgroundColor: '#000000', justifyContent: 'center', paddingHorizontal: 20, borderTopRightRadius: 8, borderBottomRightRadius: 8 },
-  addButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  categoryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#EEEEEE' },
-  categoryText: { fontSize: 18 },
-  button: { backgroundColor: '#000000', paddingVertical: 15, width: '90%', alignItems: 'center', marginTop: 20 },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  container: { flex: 1, padding: SIZES.padding },
+  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
+  body: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding },
+  categoryList: { flex: 1, width: '100%' },
+  customCategoryContainer: { flexDirection: 'row', width: '100%', marginBottom: SIZES.padding },
+  customCategoryInput: { flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0, marginRight: -1 },
+  addButton: { backgroundColor: COLORS.primary, justifyContent: 'center', paddingHorizontal: 20, borderTopRightRadius: SIZES.radius, borderBottomRightRadius: SIZES.radius, height: 55 },
+  addButtonText: { ...FONTS.h4, color: 'white', fontSize: 16 },
+  categoryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15 },
+  categoryText: { ...FONTS.body3 },
+  footer: { paddingTop: SIZES.base * 2, borderTopWidth: 1 },
 });

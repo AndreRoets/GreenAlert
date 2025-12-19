@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert, useColorScheme } from 'react-native';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
 
 export default function DisposableSetupScreen({ route, navigation }) {
   const { activeCategories, isGuest, currency, existingBudget } = route.params;
@@ -42,19 +46,21 @@ export default function DisposableSetupScreen({ route, navigation }) {
     });
   };
 
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
       <View style={styles.scrollContainer}>
-        <Text style={styles.header}>Disposable Income</Text>
-        <Text style={styles.body}>Enter your total disposable income for the month and when you get paid.</Text>
+        <AppText style={styles.header}>Disposable Income</AppText>
+        <AppText style={styles.body}>Enter your total disposable income for the month and when you get paid.</AppText>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Total Disposable Income</Text>
-          <TextInput
-            style={[styles.input, { fontSize: 24 }]}
+          <AppText style={styles.inputLabel}>Total Disposable Income</AppText>
+          <AppInput
             placeholder={`${currency.symbol}0.00`}
             keyboardType="numeric"
             value={disposableIncome}
@@ -63,9 +69,8 @@ export default function DisposableSetupScreen({ route, navigation }) {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>When do you get paid?</Text>
-          <TextInput
-            style={styles.input}
+          <AppText style={styles.inputLabel}>When do you get paid?</AppText>
+          <AppInput
             placeholder="Day of month (e.g., 15)"
             keyboardType="number-pad"
             value={paymentDay}
@@ -74,22 +79,20 @@ export default function DisposableSetupScreen({ route, navigation }) {
           />
         </View>
       </View>
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={handleNext}>
-          <Text style={styles.buttonText}>Next</Text>
-        </TouchableOpacity>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <AppButton title="Next" onPress={handleNext} />
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContainer: { padding: 20, flex: 1, justifyContent: 'center' },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#000000', marginBottom: 15, textAlign: 'center' },
-  body: { fontSize: 16, color: '#333', textAlign: 'center', marginBottom: 40, maxWidth: '90%', alignSelf: 'center' },
+  container: { flex: 1 },
+  scrollContainer: { padding: SIZES.padding, flex: 1, justifyContent: 'center' },
+  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base * 2 },
+  body: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding * 2, alignSelf: 'center' },
   inputGroup: {
-    marginBottom: 30,
+    marginBottom: SIZES.padding,
   },
   inputLabel: {
     fontSize: 18,
@@ -97,16 +100,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   input: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    fontSize: 18,
-    paddingVertical: 10,
   },
   footer: {
-    padding: 20,
+    padding: SIZES.padding,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
   },
-  button: { backgroundColor: '#000000', paddingVertical: 15, width: '100%', alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
 });

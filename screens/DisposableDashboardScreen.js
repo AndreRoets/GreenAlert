@@ -1,19 +1,24 @@
 import React, { useState, useMemo, useEffect, useContext } from 'react';
 import {
-  View, Text,
+  View,
   StyleSheet, TouchableOpacity,
   ScrollView, 
   Modal,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
   Switch,
+  useColorScheme,
 } from 'react-native';
 import { loadFromStorage } from '../services/storage';
 import { scheduleBudgetNotifications } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
+import AppCard from './AppCard';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
   const [budget, setBudget] = useState(null);
@@ -29,6 +34,9 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const { setBudgetDetails } = useBudget();
   const [categories, setCategories] = useState([]);
+
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
 
   useEffect(() => {
     const initializeBudget = async () => {
@@ -73,7 +81,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         oneOffSpendsForView: [],
         savingsForView: 0,
         overspentAmount: 0,
-        statusColor: '#32CD32', // Default to green
+        statusColor: COLORS.success, // Default to green
       };
     }
 
@@ -89,7 +97,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         savingsForView: 0,
         overspentAmount: 0,
         currency: budget.currency || { symbol: '$', code: 'USD' },
-        statusColor: '#32CD32',
+        statusColor: COLORS.success,
       };
     }
 
@@ -156,12 +164,12 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const finalDailySavings = dailySavingsBudget - overspentAmount;
 
       let status = 'green';
-      let statusColor = '#32CD32'; // green
+      let statusColor = COLORS.success; // green
       if (finalFunMoney < 0) {
         status = 'red';
-        statusColor = '#FF4136'; // red
+        statusColor = COLORS.error; // red
       } else if (dayFunMoneyBudget > 0 && finalFunMoney <= dayFunMoneyBudget / 3) {
-        statusColor = '#FFD700'; // yellow
+        statusColor = COLORS.warning; // yellow
         status = 'yellow';
       }
 
@@ -231,12 +239,12 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       const finalWeeklySavings = weeklySavingsBudget - overspentAmount;
 
       let status = 'green';
-      let statusColor = '#32CD32'; // green
+      let statusColor = COLORS.success; // green
       if (finalFunMoney < 0) {
         status = 'red';
-        statusColor = '#FF4136'; // red
+        statusColor = COLORS.error; // red
       } else if (weekFunMoneyBudget > 0 && finalFunMoney <= weekFunMoneyBudget / 3) {
-        statusColor = '#FFD700'; // yellow
+        statusColor = COLORS.warning; // yellow
         status = 'yellow';
       }
 
@@ -268,7 +276,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       savingsForView: 0,
       isSavingsNegative: false,
       currency: budget.currency || { symbol: '$', code: 'USD' },
-      statusColor: '#32CD32',
+      statusColor: COLORS.success,
       overspentAmount: 0,
     };
   }, [budget, adjustedBudgets, currentDay, currentWeek, expenses]);
@@ -285,7 +293,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   }, [budgetDetails.status]);
 
   useEffect(() => {
-    if (budgetDetails.statusColor === '#FFD700') {
+    if (budgetDetails.statusColor === COLORS.warning) {
       const today = new Date().toDateString();
       const periodIdentifier = budgetDetails.isDaily ? `${today}-day-${currentDay}` : `${today}-week-${currentWeek}`;
 
@@ -440,79 +448,79 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
   if (isLoading || !budget) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.summaryContainer}>
-        <Text style={styles.label}>{budgetDetails.label}</Text>
-        <Text style={[styles.amount, { color: budgetDetails.statusColor }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</Text>
-        <Text style={styles.subAmount}>Remaining</Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <AppCard style={styles.summaryContainer}>
+        <AppText style={styles.label}>{budgetDetails.label}</AppText>
+        <AppText style={[styles.amount, { color: budgetDetails.statusColor }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</AppText>
+        <AppText style={styles.subAmount}>Remaining</AppText>
 
         {budget.savingsGoal > 0 && (
-          <View style={styles.savingsDisplay}>
-            <Text style={styles.savingsLabel}>Savings This Period</Text>
-            <Text style={[styles.savingsAmount, { color: budgetDetails.isSavingsNegative ? '#FF4136' : '#007AFF' }]}>{budgetDetails.currency.symbol}{budgetDetails.savingsForView.toFixed(2)}</Text>
+          <View style={[styles.savingsDisplay, { borderTopColor: theme.border }]}>
+            <AppText style={styles.savingsLabel}>Savings This Period</AppText>
+            <AppText style={[styles.savingsAmount, { color: budgetDetails.isSavingsNegative ? COLORS.error : COLORS.primary }]}>{budgetDetails.currency.symbol}{budgetDetails.savingsForView.toFixed(2)}</AppText>
           </View>
         )}
 
         {budgetDetails.isDaily && budgetDetails.daysLeft > 1 && (
           <View style={styles.weekNavigator}>
             <TouchableOpacity onPress={handlePrevDay} disabled={currentDay <= 1}>
-              <Text style={[styles.arrow, currentDay <= 1 && styles.arrowDisabled]}>{'<'}</Text>
+              <AppText style={[styles.arrow, currentDay <= 1 && styles.arrowDisabled]}>{'<'}</AppText>
             </TouchableOpacity>
-            <Text style={styles.weekText}>{getDailyDateText()}</Text>
+            <AppText style={styles.weekText}>{getDailyDateText()}</AppText>
             <TouchableOpacity onPress={handleNextDay} disabled={!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft}>
-              <Text style={[styles.arrow, (!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft) && styles.arrowDisabled]}>{' >'}</Text>
+              <AppText style={[styles.arrow, (!budgetDetails.daysLeft || currentDay >= budgetDetails.daysLeft) && styles.arrowDisabled]}>{' >'}</AppText>
             </TouchableOpacity>
           </View>
         )}
         {budgetDetails.isWeekly && budgetDetails.weeksLeft > 1 && (
           <View style={styles.weekNavigator}>
             <TouchableOpacity onPress={handlePrevWeek} disabled={currentWeek <= 1}>
-              <Text style={[styles.arrow, currentWeek <= 1 && styles.arrowDisabled]}>{'<'}</Text>
+              <AppText style={[styles.arrow, currentWeek <= 1 && styles.arrowDisabled]}>{'<'}</AppText>
             </TouchableOpacity>
-            <Text style={styles.weekText}>{getWeeklyDateText()}</Text>
+            <AppText style={styles.weekText}>{getWeeklyDateText()}</AppText>
             <TouchableOpacity onPress={handleNextWeek} disabled={!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft}>
-              <Text style={[styles.arrow, (!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft) && styles.arrowDisabled]}>{' >'}</Text>
+              <AppText style={[styles.arrow, (!budgetDetails.weeksLeft || currentWeek >= budgetDetails.weeksLeft) && styles.arrowDisabled]}>{' >'}</AppText>
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </AppCard>
 
-      <ScrollView style={styles.expenseList}>
+      <ScrollView style={styles.expenseList} showsVerticalScrollIndicator={false}>
         {(budgetDetails.recurringSpendsForView.length > 0 || budgetDetails.oneOffSpendsForView.length > 0) && (
-          <Text style={styles.expenseHeader}>Spends This Period</Text>
+          <AppText style={styles.expenseHeader}>Spends This Period</AppText>
         )}
 
         {budgetDetails.recurringSpendsForView.map((spend, index) => (
-          <TouchableOpacity key={`rec-${index}`} style={[styles.expenseRow, styles.unconfirmedExpenseRow]} onPress={() => handleConfirmRecurringSpend(spend)}>
+          <TouchableOpacity key={`rec-${index}`} style={[styles.expenseRow, { borderBottomColor: theme.border }, styles.unconfirmedExpenseRow]} onPress={() => handleConfirmRecurringSpend(spend)}>
             <View style={styles.expenseDetails}>
-              <Text style={styles.expenseDescription}>{spend.description} (Tap to confirm)</Text>
-              <Text style={styles.unconfirmedExpenseAmount}>-{budgetDetails.currency.symbol}{spend.amount.toFixed(2)}</Text>
+              <AppText style={styles.expenseDescription}>{spend.description} (Tap to confirm)</AppText>
+              <AppText style={styles.unconfirmedExpenseAmount}>-{budgetDetails.currency.symbol}{spend.amount.toFixed(2)}</AppText>
             </View>
           </TouchableOpacity>
         ))}
 
         {budgetDetails.oneOffSpendsForView.map((expense) => (
-          <View key={expense.id} style={[styles.expenseRow, !expense.necessary && styles.unnecessaryExpenseRow]}>
+          <View key={expense.id} style={[styles.expenseRow, { borderBottomColor: theme.border }, !expense.necessary && styles.unnecessaryExpenseRow]}>
             <View style={[styles.expenseDetails, {flex: 1}]}>
-              <Text style={styles.expenseDescription}>{expense.description}</Text>
-              <Text style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{expense.amount.toFixed(2)}</Text>
+              <AppText style={styles.expenseDescription}>{expense.description}</AppText>
+              <AppText style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{expense.amount.toFixed(2)}</AppText>
             </View>
             <TouchableOpacity onPress={() => handleRemoveExpense(expense.id)} style={styles.removeExpenseButton}>
-              <Text style={styles.removeExpenseButtonText}>✕</Text>
+              <AppText style={styles.removeExpenseButtonText}>✕</AppText>
             </TouchableOpacity>
           </View>
         ))}
 
         {budgetDetails.recurringSpendsForView.length === 0 && budgetDetails.oneOffSpendsForView.length === 0 && (
           <View style={styles.placeholder}>
-            <Text style={{ color: '#888' }}>No spends for this period.</Text>
+            <AppText style={{ color: theme.textSecondary }}>No spends for this period.</AppText>
           </View>
         )}
       </ScrollView>
@@ -524,47 +532,46 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         onRequestClose={() => setModalVisible(false)}
       >
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Add Expense</Text>
-            <TextInput
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <AppText style={styles.modalHeader}>Add Expense</AppText>
+            <AppInput
               style={styles.modalInput}
               placeholder={`Amount (${budgetDetails.currency?.symbol || '$'})`}
               keyboardType="numeric"
               value={newExpense.amount}
               onChangeText={(text) => setNewExpense({ ...newExpense, amount: text })}
             />
-            <TextInput
+            <AppInput
               style={styles.modalInput}
               placeholder="Description (e.g., Lunch)"
               value={newExpense.description}
               onChangeText={(text) => setNewExpense({ ...newExpense, description: text })}
             />
-            <TouchableOpacity style={styles.categoryButton} onPress={() => setCategoryModalVisible(true)}>
-              <Text style={styles.categoryButtonText}>
+            <TouchableOpacity style={[styles.categoryButton, { borderBottomColor: theme.border }]} onPress={() => setCategoryModalVisible(true)}>
+              <AppText style={styles.categoryButtonText}>
                 Category: {newExpense.category || 'Select...'}
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <View style={styles.switchContainer}>
-              <Text style={styles.switchLabel}>Was this necessary?</Text>
+              <AppText style={styles.switchLabel}>Was this necessary?</AppText>
               <Switch
-                trackColor={{ false: "#767577", true: "#32CD32" }}
-                thumbColor={"#f4f3f4"}
+                trackColor={{ false: COLORS.dark.border, true: COLORS.primary }}
+                thumbColor={Platform.OS === 'android' ? COLORS.primary : ''}
                 onValueChange={(value) => setNewExpense({ ...newExpense, necessary: value })}
                 value={newExpense.necessary} />
             </View>
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+              <AppButton
+                style={styles.modalButton}
+                variant="secondary"
                 onPress={() => setModalVisible(false)}
-              >
-                <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
+                title="Cancel"
+              />
+              <AppButton
+                style={styles.modalButton}
                 onPress={handleAddExpense}
-              >
-                <Text style={styles.buttonText}>Save</Text>
-              </TouchableOpacity>
+                title="Save"
+              />
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -577,19 +584,19 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         onRequestClose={() => setCategoryModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.categoryModalContent}>
-            <Text style={styles.modalHeader}>Select Category</Text>
+          <View style={[styles.categoryModalContent, { backgroundColor: theme.card }]}>
+            <AppText style={styles.modalHeader}>Select Category</AppText>
             <ScrollView>
               {categories.map((cat, index) => (
                 <TouchableOpacity
                   key={index}
-                  style={styles.categoryItem}
+                  style={[styles.categoryItem, { borderBottomColor: theme.border }]}
                   onPress={() => {
                     setNewExpense({ ...newExpense, category: cat });
                     setCategoryModalVisible(false);
                   }}
                 >
-                  <Text style={styles.categoryItemText}>{cat}</Text>
+                  <AppText style={styles.categoryItemText}>{cat}</AppText>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -598,124 +605,66 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       </Modal>
 
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.buttonText}>Add Expense</Text>
-      </TouchableOpacity>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <AppButton title="Add Expense" onPress={() => setModalVisible(true)} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-  },
-  summaryContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 40,
-    borderBottomWidth: 2,
-    borderBottomColor: '#EEEEEE',
-    marginBottom: 20,
-  },
+  container: { flex: 1, padding: SIZES.padding },
+  summaryContainer: { alignItems: 'center', marginBottom: SIZES.padding },
   savingsDisplay: {
-    marginTop: 15,
-    paddingTop: 15,
+    marginTop: SIZES.padding,
+    paddingTop: SIZES.padding,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
     alignItems: 'center',
+    width: '100%',
   },
-  savingsLabel: {
-    fontSize: 16,
-    color: '#555',
-  },
-  savingsAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  label: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#555555',
-  },
-  amount: {
-    fontSize: 72,
-    fontWeight: 'bold',
-    marginVertical: 20,
-  },
+  savingsLabel: { ...FONTS.body3, color: COLORS.light.textSecondary },
+  savingsAmount: { ...FONTS.h3 },
+  label: { ...FONTS.h4, color: COLORS.light.textSecondary },
+  amount: { ...FONTS.h1, fontSize: 64, marginVertical: SIZES.base },
   weekNavigator: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 25,
+    marginTop: SIZES.padding,
     width: '60%',
   },
-  arrow: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-    paddingHorizontal: 10,
-  },
-  arrowDisabled: {
-    color: '#CCCCCC',
-  },
-  weekText: {
-    fontSize: 18,
-    color: '#555',
-  },
-  subAmount: { fontSize: 18, color: '#555555', marginBottom: 10 },
-  expenseList: {
-    flex: 1,
-    width: '100%',
-  },
-  expenseHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
+  arrow: { ...FONTS.h2, paddingHorizontal: SIZES.base },
+  arrowDisabled: { color: COLORS.light.textSecondary },
+  weekText: { ...FONTS.h4 },
+  subAmount: { ...FONTS.body3, color: COLORS.light.textSecondary, marginBottom: SIZES.base },
+  expenseList: { flex: 1, width: '100%' },
+  expenseHeader: { ...FONTS.h4, marginBottom: SIZES.base * 2 },
   expenseRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 15,
-    paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
   },
-  unnecessaryExpenseRow: {
-    backgroundColor: 'rgba(255, 65, 54, 0.08)', // Light red hue
-  },
-  unconfirmedExpenseRow: {
-    backgroundColor: 'rgba(0, 122, 255, 0.08)', // Light blue hue
-  },
+  unnecessaryExpenseRow: { backgroundColor: 'rgba(231, 76, 60, 0.1)' },
+  unconfirmedExpenseRow: { backgroundColor: 'rgba(0, 168, 150, 0.1)' },
   expenseDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  expenseDescription: { fontSize: 16, flex: 1 },
-  expenseAmount: { fontSize: 16, fontWeight: 'bold', color: '#FF4136', marginLeft: 10 },
-  unconfirmedExpenseAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#888',
-    marginLeft: 10
-  },
+  expenseDescription: { ...FONTS.body3, flex: 1 },
+  expenseAmount: { ...FONTS.body3, fontWeight: 'bold', color: COLORS.error, marginLeft: SIZES.base },
+  unconfirmedExpenseAmount: { ...FONTS.body3, fontWeight: 'bold', color: COLORS.light.textSecondary, marginLeft: SIZES.base },
   removeExpenseButton: {
-    marginLeft: 15,
-    padding: 5,
+    marginLeft: SIZES.base * 2,
+    padding: SIZES.base,
     justifyContent: 'center',
     alignItems: 'center',
   },
   removeExpenseButtonText: {
-    fontSize: 24,
-    color: '#AAAAAA',
+    fontSize: 20,
+    color: COLORS.light.textSecondary,
     fontWeight: 'bold',
   },
   placeholder: {
@@ -724,96 +673,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 50,
   },
-  button: {
-    backgroundColor: '#000000',
-    paddingVertical: 15,
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    padding: SIZES.padding,
+    borderTopLeftRadius: SIZES.radius * 2,
+    borderTopRightRadius: SIZES.radius * 2,
   },
-  modalHeader: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalInput: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    fontSize: 18,
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
+  modalHeader: { ...FONTS.h3, marginBottom: SIZES.padding, textAlign: 'center' },
+  modalInput: { marginBottom: SIZES.base * 2 },
   categoryButton: {
     borderBottomWidth: 2,
-    borderBottomColor: '#000000',
     paddingVertical: 15,
-    marginBottom: 20,
+    marginBottom: SIZES.padding,
   },
-  categoryButtonText: { fontSize: 18, color: '#333' },
+  categoryButtonText: { ...FONTS.body3 },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 25,
-    paddingHorizontal: 5,
+    marginBottom: SIZES.padding,
   },
-  switchLabel: {
-    fontSize: 18,
-    color: '#333',
-    fontWeight: '500',
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  modalButton: {
-    paddingVertical: 15,
-    width: '48%',
-    alignItems: 'center',
-    borderRadius: 5,
-  },
-  saveButton: {
-    backgroundColor: '#000000',
-  },
-  cancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#000000',
-  },
-  cancelButtonText: {
-    color: '#000000',
-  },
+  switchLabel: { ...FONTS.body3, fontWeight: '500' },
+  modalButtonContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+  modalButton: { width: '48%', marginVertical: 0 },
   categoryModalContent: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    padding: SIZES.padding,
+    borderTopLeftRadius: SIZES.radius * 2,
+    borderTopRightRadius: SIZES.radius * 2,
     maxHeight: '50%',
   },
   categoryItem: {
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
-  categoryItemText: {
-    fontSize: 18,
-    textAlign: 'center',
-  },
+  categoryItemText: { ...FONTS.body3, textAlign: 'center' },
+  footer: { paddingTop: SIZES.base * 2, borderTopWidth: 1 },
 });

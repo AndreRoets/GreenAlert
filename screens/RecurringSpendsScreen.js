@@ -1,8 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Switch
+  View, StyleSheet, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform
 } from 'react-native';
 import { saveToStorage } from '../services/storage';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
+import AppCard from './AppCard';
 
 const dayShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -80,18 +85,21 @@ export default function RecurringSpendsScreen({ route, navigation }) {
     navigation.navigate('DisposableDashboard', { budget: finalBudget, categories: activeCategories });
   };
 
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
+
   const renderSpendItem = (spend, index) => (
-    <View key={index} style={styles.spendItem}>
+    <AppCard key={index} style={styles.spendItem}>
       <TouchableOpacity onPress={() => removeSpend(index)} style={styles.removeButton}>
-        <Text style={styles.removeButtonText}>×</Text>
+        <AppText style={styles.removeButtonText}>×</AppText>
       </TouchableOpacity>
-      <TextInput
+      <AppInput
         style={styles.input}
         placeholder="Description (e.g., Coffee)"
         value={spend.description}
         onChangeText={(text) => updateSpend(index, 'description', text)}
       />
-      <TextInput
+      <AppInput
         style={styles.input}
         placeholder={`Amount (${currency.symbol})`}
         keyboardType="numeric"
@@ -99,7 +107,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
         onChangeText={(text) => updateSpend(index, 'amount', text)}
       />
       {/* A simple text input for category for now. A picker would be better. */}
-      <TextInput
+      <AppInput
         style={styles.input}
         placeholder="Category"
         value={spend.category}
@@ -108,7 +116,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
 
       {budget.viewPreference === 'daily' && (
         <View>
-          <Text style={styles.toggleLabel}>Apply on which days?</Text>
+          <AppText style={styles.toggleLabel}>Apply on which days?</AppText>
           <View style={styles.calendarContainer}>
             {dayShortNames.map((dayName, dayIndex) => (
               <TouchableOpacity
@@ -119,18 +127,18 @@ export default function RecurringSpendsScreen({ route, navigation }) {
                   updateSpend(index, 'selectedDays', newSelectedDays);
                 }}
               >
-                <Text style={[styles.dayText, spend.selectedDays[dayIndex] && styles.dayTextSelected]}>
+                <AppText style={[styles.dayText, spend.selectedDays[dayIndex] && styles.dayTextSelected]}>
                   {dayName}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             ))}
           </View>
-          <View style={styles.dateGrid}>
+          <View style={[styles.dateGrid, { borderColor: theme.border }]}>
             {daysInPeriod.map((date, dateIndex) => (
-              <TouchableOpacity key={dateIndex} style={[styles.dateCell, spend.selectedDays[date.getDay()] && styles.dateCellSelected]}>
-                <Text style={[styles.dateText, spend.selectedDays[date.getDay()] && styles.dateTextSelected]}>
+              <TouchableOpacity key={dateIndex} style={[styles.dateCell, { borderColor: theme.border }, spend.selectedDays[date.getDay()] && styles.dateCellSelected]}>
+                <AppText style={[styles.dateText, { color: theme.textSecondary }, spend.selectedDays[date.getDay()] && styles.dateTextSelected]}>
                   {date.getDate()}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             ))}
           </View>
@@ -139,8 +147,8 @@ export default function RecurringSpendsScreen({ route, navigation }) {
 
       {budget.viewPreference === 'weekly' && (
         <View style={styles.daysPerWeekRow}>
-          <Text style={styles.toggleLabel}>How many days per week?</Text>
-          <TextInput
+          <AppText style={styles.toggleLabel}>How many days per week?</AppText>
+          <AppInput
             style={styles.daysInput}
             keyboardType="number-pad"
             value={spend.daysPerWeek}
@@ -149,120 +157,100 @@ export default function RecurringSpendsScreen({ route, navigation }) {
           />
         </View>
       )}
-    </View>
+    </AppCard>
   );
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Expected Recurring Spends</Text>
-        <Text style={styles.subHeader}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <AppText style={styles.header}>Expected Recurring Spends</AppText>
+        <AppText style={styles.subHeader}>
           Log any recurring expenses you expect, like a daily coffee or weekly lunch. This will help you track your budget more accurately.
-        </Text>
+        </AppText>
 
         {recurringSpends.map(renderSpendItem)}
 
-        <TouchableOpacity style={styles.addButton} onPress={addSpend}>
-          <Text style={styles.addButtonText}>+ Add Recurring Spend</Text>
-        </TouchableOpacity>
+        <AppButton variant="secondary" title="+ Add Recurring Spend" onPress={addSpend} />
       </ScrollView>
 
-      <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-        <Text style={styles.doneButtonText}>Done</Text>
-      </TouchableOpacity>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <AppButton title="Done" onPress={handleDone} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF', padding: 20 },
-  header: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  subHeader: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 30 },
+  container: { flex: 1, padding: SIZES.padding },
+  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
+  subHeader: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding },
   spendItem: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
+    marginBottom: SIZES.padding,
   },
   input: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    fontSize: 16,
-    paddingVertical: 8,
-    marginBottom: 15,
+    marginBottom: SIZES.base * 2,
   },
   calendarContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
-    paddingHorizontal: 5,
-    marginBottom: 5,
+    marginTop: SIZES.base,
+    marginBottom: SIZES.base,
   },
   dayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EEEEEE',
-    backgroundColor: '#FFFFFF',
+    borderColor: COLORS.light.border,
   },
   dayButtonSelected: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
-  dayText: { fontSize: 12, fontWeight: 'bold', color: '#555' },
-  dayTextSelected: { color: '#FFFFFF' },
+  dayText: { ...FONTS.body4, fontWeight: 'bold' },
+  dayTextSelected: { color: 'white' },
   dateGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 10,
+    marginTop: SIZES.base,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   dateCell: {
     width: '14.28%', // 100% / 7 days
     aspectRatio: 1, // Make it a square
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
   },
   dateCellSelected: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    borderColor: '#DDDDDD',
+    backgroundColor: COLORS.primary,
   },
   dateText: {
-    fontSize: 14,
-    color: '#AAAAAA',
+    ...FONTS.body4,
   },
   dateTextSelected: {
-    color: '#000000',
+    color: 'white',
     fontWeight: 'bold',
   },
-  toggleLabel: { fontSize: 16 },
+  toggleLabel: { ...FONTS.body3, marginBottom: SIZES.base },
   daysPerWeekRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 },
   daysInput: {
-    fontSize: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    paddingVertical: 5,
+    height: 45,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
     textAlign: 'right',
-    minWidth: 50,
+    minWidth: 60,
+    paddingHorizontal: 0,
   },
-  removeButton: { position: 'absolute', top: 10, right: 10, padding: 5 },
-  removeButtonText: { fontSize: 20, color: '#FF4136', fontWeight: 'bold' },
-  addButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingVertical: 15,
-    alignItems: 'center',
-    borderRadius: 5,
-    marginTop: 10,
+  removeButton: { position: 'absolute', top: SIZES.base, right: SIZES.base, padding: SIZES.base, zIndex: 1 },
+  removeButtonText: { fontSize: 24, color: COLORS.error, fontWeight: 'bold' },
+  footer: {
+    paddingTop: SIZES.base * 2,
+    borderTopWidth: 1,
   },
-  addButtonText: { color: '#000000', fontSize: 16, fontWeight: 'bold' },
-  doneButton: { backgroundColor: '#000000', paddingVertical: 15, alignItems: 'center', marginTop: 20 },
-  doneButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
 });

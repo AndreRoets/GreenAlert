@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, useColorScheme } from 'react-native';
 import { saveToStorage } from '../services/storage'; // Assuming this service exists
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppButton from '../components/AppButton';
 
-// These are the correct default categories for the disposable income flow.
 const defaultDisposableCategories = [
   'Food & Drinks', 'Transport', 'Personal & Lifestyle', 'Social & Gifts', 'Miscellaneous'
 ];
@@ -21,19 +23,26 @@ export default function OnboardingScreen({ navigation, route }) {
     }
   };
 
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Welcome to GreenAlert</Text>
-      <Text style={styles.subHeader}>Brutally honest, but motivating.</Text>
-      <Text style={styles.body}>Let’s get real about your spending. How do you want to track your budget?</Text>
-      
-      <TouchableOpacity style={styles.button} onPress={() => handleChoice('entire')}>
-        <Text style={styles.buttonText}>Track Entire Budget</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.button} onPress={() => handleChoice('disposable')}>
-        <Text style={styles.buttonText}>Track Disposable Income Only</Text>
-      </TouchableOpacity>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <AppText style={styles.header}>Welcome to GreenAlert</AppText>
+      <AppText style={styles.subHeader}>Brutally honest, but motivating.</AppText>
+      <AppText style={styles.body}>Let’s get real about your spending. How do you want to track your budget?</AppText>
+
+      <View style={styles.buttonContainer}>
+        <AppButton
+          title="Track Entire Budget"
+          onPress={() => handleChoice('entire')}
+          variant="secondary"
+        />
+        <AppButton
+          title="Track Disposable Income Only"
+          onPress={() => handleChoice('disposable')}
+        />
+      </View>
     </View>
   );
 }
@@ -43,40 +52,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
+    padding: SIZES.padding,
   },
-  header: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 10,
-  },
+  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
   subHeader: {
-    fontSize: 20,
-    color: '#555555',
-    marginBottom: 40,
+    ...FONTS.h4,
+    color: COLORS.light.textSecondary,
     textAlign: 'center',
+    marginBottom: SIZES.padding * 2,
   },
-  body: {
-    fontSize: 18,
-    color: '#000000',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  button: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    width: '90%',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  buttonText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  body: { ...FONTS.body3, textAlign: 'center', marginBottom: SIZES.padding * 2 },
+  buttonContainer: { width: '100%' },
 });

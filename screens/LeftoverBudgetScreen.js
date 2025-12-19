@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Modal, useColorScheme } from 'react-native';
 import { saveToStorage } from '../services/storage';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
+import AppCard from './AppCard';
 
 export default function LeftoverBudgetScreen({ route, navigation }) {
   const { unallocated, paymentDay, activeCategories, isGuest, currency } = route.params;
@@ -14,6 +19,9 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
 
   // This flag tracks if the user has entered the customization modal
   const [hasCustomized, setHasCustomized] = useState(false);
+
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
 
   const calculateDaysLeft = (payDay) => {
     if (!payDay) return 0;
@@ -136,89 +144,84 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <Text style={styles.header}>Budget Your Leftover Money</Text>
+        <AppText style={styles.header}>Budget Your Leftover Money</AppText>
 
-        <View style={styles.leftoverContainer}>
-          <Text style={styles.leftoverLabel}>Money Left Over</Text>
-          <Text style={styles.leftoverAmount}>{currency.symbol}{unallocated.toFixed(2)}</Text>
-          <Text style={styles.remainingText}>for the next {daysLeft} days</Text>
-        </View>
+        <AppCard style={styles.leftoverContainer}>
+          <AppText style={styles.leftoverLabel}>Money Left Over</AppText>
+          <AppText style={styles.leftoverAmount}>{currency.symbol}{unallocated.toFixed(2)}</AppText>
+          <AppText style={styles.remainingText}>for the next {daysLeft} days</AppText>
+        </AppCard>
 
-        <TouchableOpacity style={styles.savingsButton} onPress={() => setSavingsModalVisible(true)}>
-          <Text style={styles.savingsButtonText}>
-            {savingsAmount > 0 ? `Edit Savings Goal (${currency.symbol}${savingsAmount.toFixed(2)})` : 'Set a Savings Goal'}
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.subHeader}>Spendable: <Text style={styles.bold}>{currency.symbol}{spendableUnallocated.toFixed(2)}</Text></Text>
+        <AppButton
+          variant="secondary"
+          onPress={() => setSavingsModalVisible(true)}
+          title={savingsAmount > 0 ? `Edit Savings Goal (${currency.symbol}${savingsAmount.toFixed(2)})` : 'Set a Savings Goal'}
+        />
+        <AppText style={styles.subHeader}>Spendable: <AppText style={styles.bold}>{currency.symbol}{spendableUnallocated.toFixed(2)}</AppText></AppText>
 
         <View style={styles.optionsContainer}>
-          <TouchableOpacity
-            style={[styles.optionButton, view === 'daily' && styles.selectedOption]}
+          <AppButton
+            style={styles.optionButton}
+            variant={view === 'daily' ? 'primary' : 'secondary'}
             onPress={() => handleSelectView('daily')}
-          >
-            <Text style={[styles.optionText, view === 'daily' && styles.selectedOptionText]}>Budget Daily</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.optionButton, view === 'weekly' && styles.selectedOption]}
+            title="Budget Daily"
+          />
+          <AppButton
+            style={styles.optionButton}
+            variant={view === 'weekly' ? 'primary' : 'secondary'}
             onPress={() => handleSelectView('weekly')}
-          >
-            <Text style={[styles.optionText, view === 'weekly' && styles.selectedOptionText]}>Budget Weekly</Text>
-          </TouchableOpacity>
+            title="Budget Weekly"
+          />
         </View>
 
         {view === 'daily' && (
-          <View style={styles.resultContainer}>
+          <AppCard style={styles.resultContainer}>
             <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Daily Fun Money:</Text>
-              <Text style={styles.resultAmount}>{currency.symbol}{dailyAverage.toFixed(2)}</Text>
-              <Text style={styles.resultLabel}>Daily Savings:</Text>
-              <Text style={[styles.resultAmount, { color: '#007AFF' }]}>{currency.symbol}{dailySavings.toFixed(2)}</Text>
+              <AppText style={styles.resultLabel}>Daily Fun Money:</AppText>
+              <AppText style={styles.resultAmount}>{currency.symbol}{dailyAverage.toFixed(2)}</AppText>
+              <AppText style={styles.resultLabel}>Daily Savings:</AppText>
+              <AppText style={[styles.resultAmount, { color: COLORS.primary, fontSize: 32 }]}>{currency.symbol}{dailySavings.toFixed(2)}</AppText>
             </View>
-            <TouchableOpacity style={styles.customizeButton} onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }}>
-              <Text style={styles.customizeButtonText}>Customize Allocation</Text>
-            </TouchableOpacity>
-          </View>
+            <AppButton variant="secondary" title="Customize Allocation" onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }} />
+          </AppCard>
         )}
 
         {view === 'weekly' && (
-          <View style={styles.resultContainer}>
+          <AppCard style={styles.resultContainer}>
             <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Weekly Fun Money:</Text>
-              <Text style={styles.resultAmount}>{currency.symbol}{weeklyAverage.toFixed(2)}</Text>
-              <Text style={styles.resultLabel}>Weekly Savings:</Text>
-              <Text style={[styles.resultAmount, { color: '#007AFF' }]}>{currency.symbol}{weeklySavings.toFixed(2)}</Text>
+              <AppText style={styles.resultLabel}>Weekly Fun Money:</AppText>
+              <AppText style={styles.resultAmount}>{currency.symbol}{weeklyAverage.toFixed(2)}</AppText>
+              <AppText style={styles.resultLabel}>Weekly Savings:</AppText>
+              <AppText style={[styles.resultAmount, { color: COLORS.primary, fontSize: 32 }]}>{currency.symbol}{weeklySavings.toFixed(2)}</AppText>
             </View>
-            <TouchableOpacity style={styles.customizeButton} onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }}>
-              <Text style={styles.customizeButtonText}>Customize Allocation</Text>
-            </TouchableOpacity>
-          </View>
+            <AppButton variant="secondary" title="Customize Allocation" onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }} />
+          </AppCard>
         )}
 
       </ScrollView>
 
       <Modal
         animationType="slide"
-        transparent={false}
         visible={isCustomizeModalVisible}
         onRequestClose={() => setCustomizeModalVisible(false)}
       >
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <Text style={styles.header}>Customize Budget</Text>
-            <View style={styles.allocationSummary}>
-              <Text style={styles.summaryText}>Allocated: {currency.symbol}{allocatedSum.toFixed(2)}</Text>
-              <Text style={[styles.summaryText, { color: remainingToAllocate < 0 ? '#FF4136' : '#555' }]}>
+            <AppText style={styles.header}>Customize Budget</AppText>
+            <View style={[styles.allocationSummary, { borderBottomColor: theme.border }]}>
+              <AppText style={styles.summaryText}>Allocated: {currency.symbol}{allocatedSum.toFixed(2)}</AppText>
+              <AppText style={[styles.summaryText, { color: remainingToAllocate < 0 ? COLORS.error : theme.textSecondary }]}>
                 Remaining: {currency.symbol}{remainingToAllocate.toFixed(2)}
-              </Text>
+              </AppText>
             </View>
 
             {view === 'daily' && dailyBudgets.map((budget, index) => (
-              <View key={index} style={styles.inputRow}>
-                <Text style={styles.inputLabel}>{formatDateForDay(index)}</Text>
-                <TextInput
+              <View key={index} style={[styles.inputRow, { borderBottomColor: theme.border }]}>
+                <AppText style={styles.inputLabel}>{formatDateForDay(index)}</AppText>
+                <AppInput
                   style={styles.input}
                   placeholder={`${currency.symbol}0.00`}
                   keyboardType="numeric"
@@ -229,9 +232,9 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
             ))}
 
             {view === 'weekly' && weeklyBudgets.map((budget, index) => (
-              <View key={index} style={styles.inputRow}>
-                <Text style={styles.inputLabel}>Week {index + 1}</Text>
-                <TextInput
+              <View key={index} style={[styles.inputRow, { borderBottomColor: theme.border }]}>
+                <AppText style={styles.inputLabel}>Week {index + 1}</AppText>
+                <AppInput
                   style={styles.input}
                   placeholder={`${currency.symbol}0.00`}
                   keyboardType="numeric"
@@ -241,10 +244,8 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
               </View>
             ))}
           </ScrollView>
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.button} onPress={() => setCustomizeModalVisible(false)}>
-              <Text style={styles.buttonText}>Done Customizing</Text>
-            </TouchableOpacity>
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
+            <AppButton title="Done Customizing" onPress={() => setCustomizeModalVisible(false)} />
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -256,9 +257,9 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
         onRequestClose={() => setSavingsModalVisible(false)}
       >
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>Set Savings Goal</Text>
-            <TextInput
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <AppText style={styles.modalHeader}>Set Savings Goal</AppText>
+            <AppInput
               style={styles.modalInput}
               placeholder={`${currency.symbol}0.00`}
               keyboardType="numeric"
@@ -267,114 +268,47 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
               autoFocus={true}
             />
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+              <AppButton
+                style={styles.modalButton}
+                variant="secondary"
                 onPress={() => setSavingsModalVisible(false)}
-              >
-                <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
+                title="Cancel"
+              />
+              <AppButton
+                style={styles.modalButton}
                 onPress={() => setSavingsModalVisible(false)}
-              >
-                <Text style={styles.buttonText}>Set Goal</Text>
-              </TouchableOpacity>
+                title="Set Goal"
+              />
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={handleDone}>
-          <Text style={styles.buttonText}>Next</Text>
-        </TouchableOpacity>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <AppButton title="Next" onPress={handleDone} />
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' }, // Main screen container
-  modalContainer: { flex: 1, backgroundColor: '#FFFFFF', paddingTop: 40 }, // Modal container
+  container: { flex: 1 },
+  modalContainer: { flex: 1, paddingTop: 40 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  scrollContainer: { padding: 20, alignItems: 'center' },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#000000', marginBottom: 10, textAlign: 'center' },
-  subHeader: { fontSize: 18, color: '#555', textAlign: 'center', marginBottom: 40 },
-  bold: { fontWeight: 'bold', color: '#000000' },
-  optionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 20,
-  },
-  optionButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingVertical: 15,
-    width: '45%',
-    alignItems: 'center',
-  },
-  selectedOption: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
-  },
-  optionText: { color: '#000000', fontSize: 16, fontWeight: 'bold' },
-  selectedOptionText: { color: '#FFFFFF' },
-  leftoverContainer: {
-    width: '100%',
-    padding: 20,
-    marginBottom: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#000000',
-    backgroundColor: '#F9F9F9',
-  },
-  leftoverLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  leftoverAmount: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    marginTop: 10,
-    textAlign: 'center',
-  },
-  savingsButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  savingsButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  remainingText: { fontSize: 14, fontWeight: 'bold', marginTop: 5, color: '#555' },
-  resultContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  resultLabel: { fontSize: 20, color: '#555', marginBottom: 10 },
-  resultAmount: { fontSize: 60, fontWeight: 'bold', color: '#32CD32' },
-  customizeButton: {
-    marginTop: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  customizeButtonText: {
-    color: '#000000', fontSize: 16, fontWeight: 'bold'
-  },
-  resultRow: {
-    alignItems: 'center',
-    width: '100%',
-  },
+  scrollContainer: { padding: SIZES.padding, alignItems: 'center' },
+  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
+  subHeader: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding },
+  bold: { fontWeight: 'bold', color: COLORS.light.text },
+  optionsContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: SIZES.base },
+  optionButton: { width: '48%', marginVertical: 0 },
+  leftoverContainer: { alignItems: 'center', marginBottom: SIZES.base },
+  leftoverLabel: { ...FONTS.h4, color: COLORS.light.textSecondary },
+  leftoverAmount: { ...FONTS.h1, marginVertical: SIZES.base },
+  remainingText: { ...FONTS.body4, color: COLORS.light.textSecondary },
+  resultContainer: { alignItems: 'center', width: '100%', marginTop: SIZES.padding },
+  resultLabel: { ...FONTS.h4, color: COLORS.light.textSecondary, marginBottom: SIZES.base },
+  resultAmount: { ...FONTS.h1, color: COLORS.success, marginBottom: SIZES.padding },
+  resultRow: { alignItems: 'center', width: '100%' },
   allocationSummary: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -382,60 +316,44 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee'
   },
-  summaryText: { fontSize: 16, fontWeight: 'bold' },
+  summaryText: { ...FONTS.body3, fontWeight: 'bold' },
   inputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
     marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
   },
-  inputLabel: { fontSize: 16, color: '#333' },
+  inputLabel: { ...FONTS.body3 },
   input: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000',
-    fontSize: 16,
-    paddingVertical: 5,
-    minWidth: 100,
+    height: 45,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
     textAlign: 'right',
+    minWidth: 120,
+    paddingHorizontal: 0,
   },
-  footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#EEEEEE' },
-  button: { backgroundColor: '#000000', paddingVertical: 15, width: '100%', alignItems: 'center'},
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  footer: { padding: SIZES.padding, borderTopWidth: 1 },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    padding: SIZES.padding,
+    borderTopLeftRadius: SIZES.radius * 2,
+    borderTopRightRadius: SIZES.radius * 2,
   },
-  modalHeader: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
+  modalHeader: { ...FONTS.h3, marginBottom: SIZES.padding, textAlign: 'center' },
   modalInput: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    fontSize: 24,
-    paddingVertical: 10,
-    marginBottom: 20,
+    ...FONTS.h2,
+    height: 'auto',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
     textAlign: 'center',
+    marginBottom: SIZES.padding,
   },
   modalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
   },
-  modalButton: {
-    paddingVertical: 15,
-    width: '48%',
-    alignItems: 'center',
-    borderRadius: 5,
-  },
-  saveButton: { backgroundColor: '#000000' },
-  cancelButton: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: '#000000' },
-  cancelButtonText: { color: '#000000' },
+  modalButton: { width: '48%', marginVertical: 0 },
 });

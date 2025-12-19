@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { loadFromStorage } from '../services/storage';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppButton from '../components/AppButton';
+import AppCard from './AppCard';
 
 export default function DashboardScreen({ route, navigation }) {
   const [budgetData, setBudgetData] = useState(null);
@@ -9,6 +13,9 @@ export default function DashboardScreen({ route, navigation }) {
   const [isGuest, setIsGuest] = useState(true);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
+
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
 
   useEffect(() => {
     const fetchBudgetData = async () => {
@@ -66,81 +73,70 @@ export default function DashboardScreen({ route, navigation }) {
   const unallocated = totalBudget - allocated;
 
   const currency = budgetData?.currency || { symbol: '$', code: 'USD' };
-
-  const statusColor = {
-    green: '#32CD32', // Intense Green
-    yellow: '#FFD700', // Intense Yellow
-    red: '#FF4136', // Intense Red
-  };
+  const statusColor = unallocated < 0 ? COLORS.error : COLORS.success;
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
+    return <View style={[styles.centered, { backgroundColor: theme.background }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   }
 
   if (!budgetData) {
-    return <View style={styles.centered}><Text>No budget data found.</Text></View>;
+    return <View style={[styles.centered, { backgroundColor: theme.background }]}><AppText>No budget data found.</AppText></View>;
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.summaryContainer}>
-        <Text style={styles.label}>Money Left Over</Text>
-        <Text style={[styles.amount, { color: statusColor[budgetStatus] }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <AppCard style={styles.summaryContainer}>
+        <AppText style={styles.label}>Money Left Over</AppText>
+        <AppText style={[styles.amount, { color: statusColor }]}>
           {currency.symbol}{unallocated.toFixed(2)}
-        </Text>
-        <Text style={styles.subAmount}>out of {currency.symbol}{totalBudget.toFixed(2)} total budget</Text>
-        <Text style={styles.daysLeft}>{daysLeft} Days Left in Period</Text>
-      </View>
+        </AppText>
+        <AppText style={styles.subAmount}>out of {currency.symbol}{totalBudget.toFixed(2)} total budget</AppText>
+        <View style={styles.daysLeftContainer}>
+          <AppText style={styles.daysLeft}>{daysLeft} Days Left</AppText>
+        </View>
+      </AppCard>
 
-      <ScrollView style={styles.categoryList}>
-        <Text style={styles.categoryHeader}>Category Breakdown</Text>
+      <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
+        <AppText style={styles.categoryHeader}>Category Breakdown</AppText>
         {Object.entries(budgetData.categoryBudgets).map(([name, amount]) => (
-          <View key={name} style={styles.categoryRow}>
-            <Text style={styles.categoryName}>{name}</Text>
+          <View key={name} style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
+            <AppText style={styles.categoryName}>{name}</AppText>
             {/* TODO: Subtract expenses from amount */}
-            <Text style={styles.categoryAmount}>{currency.symbol}{amount.toFixed(2)}</Text>
+            <AppText style={styles.categoryAmount}>{currency.symbol}{amount.toFixed(2)}</AppText>
           </View>
         ))}
          {unallocated < 0 && (
-          <View style={styles.categoryRow}>
-            <Text style={[styles.categoryName, {color: statusColor.red}]}>Over-allocated</Text>
-            <Text style={[styles.categoryAmount, {color: statusColor.red}]}>-{currency.symbol}{Math.abs(unallocated).toFixed(2)}</Text>
+          <View style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
+            <AppText style={[styles.categoryName, {color: COLORS.error}]}>Over-allocated</AppText>
+            <AppText style={[styles.categoryAmount, {color: COLORS.error}]}>-{currency.symbol}{Math.abs(unallocated).toFixed(2)}</AppText>
           </View>
         )}
       </ScrollView>
 
       {unallocated > 0 && (
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('LeftoverBudget', { unallocated, paymentDay: budgetData.paymentDay, activeCategories: categories, isGuest, currency })}>
-          <Text style={styles.buttonText}>Budget Leftover Money</Text>
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <AppButton title="Budget Leftover Money" onPress={() => navigation.navigate('LeftoverBudget', { unallocated, paymentDay: budgetData.paymentDay, activeCategories: categories, isGuest, currency })} />
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    paddingTop: 0,
+  container: { flex: 1, padding: SIZES.padding },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  summaryContainer: { alignItems: 'center', marginBottom: SIZES.padding },
+  label: { ...FONTS.h4, color: COLORS.light.textSecondary },
+  amount: { ...FONTS.h1, fontSize: 64, marginVertical: SIZES.base },
+  subAmount: { ...FONTS.body3, color: COLORS.light.textSecondary },
+  daysLeftContainer: {
+    marginTop: SIZES.padding,
+    paddingVertical: SIZES.base,
+    paddingHorizontal: SIZES.padding,
+    backgroundColor: COLORS.light.background,
+    borderRadius: SIZES.radius,
   },
-  summaryContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 40,
-    borderBottomWidth: 2,
-    borderBottomColor: '#EEEEEE',
-  },
-  label: { fontSize: 20, fontWeight: 'bold', color: '#555555' },
-  amount: {
-    fontSize: 72,
-    fontWeight: 'bold',
-    marginVertical: 10,
-  },
-  subAmount: { fontSize: 18, color: '#555555' },
-  daysLeft: { fontSize: 24, fontWeight: 'bold', color: '#000000' },
+  daysLeft: { ...FONTS.h4 },
   categoryList: {
     flex: 1,
     width: '100%',
@@ -148,19 +144,16 @@ const styles = StyleSheet.create({
   },
   categoryHeader: {
     fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontWeight: '600',
+    marginBottom: SIZES.base * 2,
   },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
   },
-  categoryName: { fontSize: 18 },
-  categoryAmount: { fontSize: 18, fontWeight: 'bold' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  button: { backgroundColor: '#000000', paddingVertical: 15, width: '100%', alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  categoryName: { ...FONTS.body3 },
+  categoryAmount: { ...FONTS.body3, fontWeight: 'bold' },
+  footer: { paddingTop: SIZES.base * 2 },
 });

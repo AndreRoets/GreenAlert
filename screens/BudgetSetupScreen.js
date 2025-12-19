@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert, useColorScheme } from 'react-native';
 import { saveToStorage } from '../services/storage';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
+import AppText from '../components/AppText';
+import AppInput from '../components/AppInput';
+import AppButton from '../components/AppButton';
+import AppCard from './AppCard';
 
 export default function BudgetSetupScreen({ route, navigation }) {
   const { activeCategories, isGuest, currency, existingBudget } = route.params;
@@ -68,32 +73,35 @@ export default function BudgetSetupScreen({ route, navigation }) {
     navigation.navigate('Dashboard', { budgetData, isGuest }); // Pass data for guest mode
   };
 
+  const colorScheme = useColorScheme();
+  const theme = COLORS[colorScheme];
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.header}>Set Your Budget</Text>
-        <Text style={styles.body}>Enter your total budget and assign an amount to each category.</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <AppText style={styles.header}>Set Your Budget</AppText>
+        <AppText style={styles.body}>Enter your total budget and assign an amount to each category.</AppText>
 
-        <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>Total Budget Amount</Text>
-          <TextInput
+        <AppCard style={styles.totalContainer}>
+          <AppText style={styles.totalLabel}>Total Budget Amount</AppText>
+          <AppInput
             style={styles.totalInput}
             placeholder={`${currency.symbol}0.00`}
             keyboardType="numeric"
             value={totalBudget}
             onChangeText={handleTotalBudgetChange}
           />
-          <Text style={[styles.remainingText, { color: remaining < 0 ? '#FF4136' : '#32CD32' }]}>
+          <AppText style={[styles.remainingText, { color: remaining < 0 ? COLORS.error : COLORS.success }]}>
             Remaining: {currency.symbol}{remaining.toFixed(2)}
-          </Text>
-        </View>
+          </AppText>
+        </AppCard>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>When do you get paid?</Text>
-          <TextInput
+        <View style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
+          <AppText style={styles.categoryText}>When do you get paid?</AppText>
+          <AppInput
             style={styles.categoryInput}
             placeholder="Day of month (e.g., 15)"
             keyboardType="number-pad"
@@ -104,9 +112,9 @@ export default function BudgetSetupScreen({ route, navigation }) {
         </View>
 
         {activeCategories.map(category => (
-          <View key={category} style={styles.categoryRow}>
-            <Text style={styles.categoryText}>{category}</Text>
-            <TextInput
+          <View key={category} style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
+            <AppText style={styles.categoryText}>{category}</AppText>
+            <AppInput
               style={styles.categoryInput}
               placeholder={`${currency.symbol}0.00`}
               keyboardType="numeric"
@@ -116,68 +124,48 @@ export default function BudgetSetupScreen({ route, navigation }) {
           </View>
         ))}
       </ScrollView>
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={handleDone}>
-          <Text style={styles.buttonText}>Finish Setup</Text>
-        </TouchableOpacity>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <AppButton title="Finish Setup" onPress={handleDone} />
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContainer: { padding: 20 },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#000000', marginBottom: 15, textAlign: 'center' },
-  body: { fontSize: 16, color: '#333', textAlign: 'center', marginBottom: 20, maxWidth: '90%', alignSelf: 'center' },
-  totalContainer: {
-    marginBottom: 30,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#000000',
-    alignItems: 'center',
-  },
-  totalLabel: { fontSize: 18, fontWeight: 'bold', color: '#000000' },
+  container: { flex: 1 },
+  scrollContainer: { padding: SIZES.padding },
+  header: { ...FONTS.h2, textAlign: 'center', marginBottom: SIZES.base },
+  body: { ...FONTS.body3, color: COLORS.light.textSecondary, textAlign: 'center', marginBottom: SIZES.padding, alignSelf: 'center' },
+  totalContainer: { marginBottom: SIZES.padding, alignItems: 'center' },
+  totalLabel: { ...FONTS.h4 },
   totalInput: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginTop: 10,
+    ...FONTS.h1,
+    height: 'auto',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
     textAlign: 'center',
-    width: '100%',
+    marginVertical: SIZES.base,
   },
-  remainingText: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
+  remainingText: { ...FONTS.h4, marginTop: SIZES.base },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
   },
-  inputGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  inputLabel: { fontSize: 18, flex: 1 },
-  categoryText: { fontSize: 18, flex: 1 },
+  categoryText: { ...FONTS.body3, flex: 1 },
   categoryInput: {
-    fontSize: 18,
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    paddingVertical: 5,
+    ...FONTS.body3,
+    height: 45,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
     textAlign: 'right',
-    minWidth: 100,
+    minWidth: 120,
+    paddingHorizontal: 0,
   },
   footer: {
-    padding: 20,
+    padding: SIZES.padding,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
   },
-  button: { backgroundColor: '#000000', paddingVertical: 15, width: '100%', alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
 });
