@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useContext } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet, TouchableOpacity,
@@ -36,41 +36,43 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const { setBudgetDetails } = useBudget();
   const [categories, setCategories] = useState([]);
   const today = useCurrentDate();
+  const prevBudgetDetailsRef = useRef();
 
   const colorScheme = useColorScheme();
   const theme = COLORS[colorScheme];
 
-  useEffect(() => {
-    const initializeBudget = async () => {
-      console.log("Initializing budget...");
-      setIsLoading(true);
-      let initialBudget;
-      let initialCategories;
+  const initializeBudget = useCallback(async () => {
+    console.log("Initializing budget...");
+    setIsLoading(true);
+    let initialBudget;
+    let initialCategories;
 
-      if (route.params?.budget && route.params?.categories) {
-        // Budget was passed via navigation (e.g., after setup)
-        initialBudget = route.params.budget;
-        initialCategories = route.params.categories;
-      } else {
-        // No params, load from storage (e.g., on app start)
-        initialBudget = await loadFromStorage('userBudget');
-        // Load the specific categories for the disposable budget
-        initialCategories = await loadFromStorage('disposableUserCategories');
-      }
+    if (route.params?.budget && route.params?.categories) {
+      // Budget was passed via navigation (e.g., after setup)
+      initialBudget = route.params.budget;
+      initialCategories = route.params.categories;
+    } else {
+      // No params, load from storage (e.g., on app start)
+      initialBudget = await loadFromStorage('userBudget');
+      // Load the specific categories for the disposable budget
+      initialCategories = await loadFromStorage('disposableUserCategories');
+    }
 
-      if (initialBudget) {
-        setBudget(initialBudget);
-        setAdjustedBudgets(initialBudget.dailyBudgets || initialBudget.weeklyBudgets || []);
-      }
-      if (initialCategories) {
-        setCategories(initialCategories);
-        // Set default category for new expenses
-        setNewExpense(prev => ({ ...prev, category: initialCategories[0] || '' }));
-      }
-      setIsLoading(false);
-    };
-    initializeBudget();
+    if (initialBudget) {
+      setBudget(initialBudget);
+      setAdjustedBudgets(initialBudget.dailyBudgets || initialBudget.weeklyBudgets || []);
+    }
+    if (initialCategories) {
+      setCategories(initialCategories);
+      // Set default category for new expenses
+      setNewExpense(prev => ({ ...prev, category: initialCategories[0] || '' }));
+    }
+    setIsLoading(false);
   }, [route.params?.budget, route.params?.categories]);
+
+  useEffect(() => {
+    initializeBudget();
+  }, [initializeBudget]);
 
   const budgetDetails = useMemo(() => {
     if (!budget) {
@@ -283,8 +285,12 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   }, [budget, adjustedBudgets, currentDay, currentWeek, expenses, today]);
 
   useEffect(() => {
-    // Update the global context with the latest budget details
-    setBudgetDetails(budgetDetails);
+    const prevDetails = prevBudgetDetailsRef.current;
+    const currentDetailsString = JSON.stringify(budgetDetails);
+    if (currentDetailsString !== JSON.stringify(prevDetails)) {
+      setBudgetDetails(budgetDetails);
+      prevBudgetDetailsRef.current = budgetDetails;
+    }
   }, [budgetDetails, setBudgetDetails]);
 
   useEffect(() => {
