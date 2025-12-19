@@ -5,7 +5,7 @@ import { loadFromStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppButton from '../components/AppButton';
-import { useCurrentDate } from '../hooks/useCurrentDate';
+import useCurrentDate from '../hooks/useCurrentDate';
 import AppCard from './AppCard';
 
 export default function DashboardScreen({ route, navigation }) {

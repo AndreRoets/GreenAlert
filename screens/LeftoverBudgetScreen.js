@@ -6,7 +6,7 @@ import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
-import { useCurrentDate } from '../hooks/useCurrentDate';
+import useCurrentDate from '../hooks/useCurrentDate';
 
 export default function LeftoverBudgetScreen({ route, navigation }) {
   const { unallocated, paymentDay, activeCategories, isGuest, currency } = route.params;
@@ -26,19 +26,19 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
   const theme = COLORS[colorScheme];
 
   const calculateDaysLeft = useMemo(() => {
-    if (!payDay) return 0;
+    if (!paymentDay) return 0;
 
     const currentDay = today.getDate();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
 
     let periodEndDate;
-    if (currentDay < payDay) {
-      periodEndDate = new Date(currentYear, currentMonth, payDay);
+    if (currentDay < paymentDay) {
+      periodEndDate = new Date(currentYear, currentMonth, paymentDay);
     } else {
       const nextMonth = new Date(today);
       nextMonth.setMonth(currentMonth + 1);
-      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), payDay);
+      periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), paymentDay);
     }
     // Set time to the end of the day to include the last day fully
     periodEndDate.setHours(23, 59, 59, 999);

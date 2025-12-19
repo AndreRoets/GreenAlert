@@ -19,7 +19,7 @@ import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
-import { useCurrentDate } from '../hooks/useCurrentDate';
+import useCurrentDate from '../hooks/useCurrentDate';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
   const [budget, setBudget] = useState(null);
