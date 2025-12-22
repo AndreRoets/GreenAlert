@@ -77,24 +77,64 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
       setHasCustomized(false); // Reset customization when view changes
       // Initialize budget arrays when view is selected
       if (selectedView === 'daily') {
-        setDailyBudgets(Array(daysLeft).fill(''));
+        const avg = daysLeft > 0 ? (spendableUnallocated / daysLeft).toFixed(2) : '0';
+        setDailyBudgets(Array(daysLeft).fill(avg));
       } else if (selectedView === 'weekly') {
-        setWeeklyBudgets(Array(weeksLeft).fill(''));
+        const avg = weeksLeft > 0 ? (spendableUnallocated / weeksLeft).toFixed(2) : '0';
+        setWeeklyBudgets(Array(weeksLeft).fill(avg));
       }
     }
   };
 
   const handleBudgetChange = (index, amount) => {
     if (!/^\d*\.?\d*$/.test(amount)) return;
+    
+    const isDaily = view === 'daily';
+    let newBudgets = isDaily ? [...dailyBudgets] : [...weeklyBudgets];
 
-    if (view === 'daily') {
-      const newBudgets = [...dailyBudgets];
-      newBudgets[index] = amount;
+    // Update the specific budget
+    newBudgets[index] = amount;
+    
+    if (isDaily) {
       setDailyBudgets(newBudgets);
-    } else if (view === 'weekly') {
-      const newBudgets = [...weeklyBudgets];
-      newBudgets[index] = amount;
+    } else {
       setWeeklyBudgets(newBudgets);
+    }
+  };
+
+  const handleConfirmDistribution = () => {
+    const isDaily = view === 'daily';
+    const currentBudgets = isDaily ? dailyBudgets : weeklyBudgets;
+    
+    let allocated = 0;
+    let emptyCount = 0;
+
+    currentBudgets.forEach(val => {
+      const num = parseFloat(val);
+      if (!isNaN(num) && num > 0) {
+        allocated += num;
+      } else {
+        emptyCount++;
+      }
+    });
+
+    const remaining = spendableUnallocated - allocated;
+
+    if (remaining < -0.01) {
+      Alert.alert("Over Budget", "You have allocated more than your available funds.");
+      return;
+    }
+
+    if (emptyCount > 0) {
+      const avg = (remaining / emptyCount).toFixed(2);
+      const newBudgets = currentBudgets.map(val => {
+        const num = parseFloat(val);
+        if (!isNaN(num) && num > 0) return val;
+        return avg;
+      });
+
+      if (isDaily) setDailyBudgets(newBudgets);
+      else setWeeklyBudgets(newBudgets);
     }
   };
 
@@ -187,7 +227,13 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
               <AppText style={styles.resultLabel}>Daily Savings:</AppText>
               <AppText style={[styles.resultAmount, { color: COLORS.primary, fontSize: 32 }]}>{currency.symbol}{dailySavings.toFixed(2)}</AppText>
             </View>
-            <AppButton variant="secondary" title="Customize Allocation" onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }} />
+            <AppButton variant="secondary" title="Customize Allocation" onPress={() => { 
+              if (!hasCustomized) {
+                setDailyBudgets(Array(daysLeft).fill(''));
+              }
+              setCustomizeModalVisible(true); 
+              setHasCustomized(true); 
+            }} />
           </AppCard>
         )}
 
@@ -199,7 +245,13 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
               <AppText style={styles.resultLabel}>Weekly Savings:</AppText>
               <AppText style={[styles.resultAmount, { color: COLORS.primary, fontSize: 32 }]}>{currency.symbol}{weeklySavings.toFixed(2)}</AppText>
             </View>
-            <AppButton variant="secondary" title="Customize Allocation" onPress={() => { setCustomizeModalVisible(true); setHasCustomized(true); }} />
+            <AppButton variant="secondary" title="Customize Allocation" onPress={() => { 
+              if (!hasCustomized) {
+                setWeeklyBudgets(Array(weeksLeft).fill(''));
+              }
+              setCustomizeModalVisible(true); 
+              setHasCustomized(true); 
+            }} />
           </AppCard>
         )}
 
@@ -249,7 +301,8 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
             ))}
           </ScrollView>
           <View style={[styles.footer, { borderTopColor: theme.border }]}>
-            <AppButton title="Done Customizing" onPress={() => setCustomizeModalVisible(false)} />
+            <AppButton title="Confirm Distribution" onPress={handleConfirmDistribution} variant="secondary" style={{ marginBottom: 10 }} />
+            <AppButton title="Done Customizing" onPress={handleDone} />
           </View>
         </KeyboardAvoidingView>
       </Modal>
