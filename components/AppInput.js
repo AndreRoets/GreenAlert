@@ -12,8 +12,8 @@ const AppInput = ({ style, placeholderTextColor, ...props }) => {
         styles.input,
         { 
           backgroundColor: theme.inputBackground,
-          color: theme.text,
           borderColor: theme.border,
+          color: theme.text,
         },
         style
       ]}
@@ -25,7 +25,6 @@ const AppInput = ({ style, placeholderTextColor, ...props }) => {
 
 const styles = StyleSheet.create({
   input: {
-    width: '100%',
     height: 55,
     borderRadius: SIZES.radius,
     paddingHorizontal: SIZES.padding,

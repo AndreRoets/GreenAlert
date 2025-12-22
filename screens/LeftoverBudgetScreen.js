@@ -334,6 +334,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: { ...FONTS.body3 },
   input: {
+    ...FONTS.body3,
     height: 45,
     borderWidth: 0,
     backgroundColor: 'transparent',
