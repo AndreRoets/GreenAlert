@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, StyleSheet, useColorScheme } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function AddExpenseScreen() {
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -16,8 +16,17 @@ export default function AddExpenseScreen() {
 
       {/* Placeholder for form inputs */}
       <View style={styles.form}>
-        <AppInput style={styles.input} placeholder="Amount ($)" keyboardType="numeric" />
-        <AppInput style={styles.input} placeholder="Description (e.g., Coffee)" />
+        <AppInput
+          style={[styles.input, { color: theme.text }]}
+          placeholderTextColor={theme.textSecondary}
+          placeholder="Amount ($)"
+          keyboardType="numeric"
+        />
+        <AppInput
+          style={[styles.input, { color: theme.text }]}
+          placeholderTextColor={theme.textSecondary}
+          placeholder="Description (e.g., Coffee)"
+        />
         <AppText style={styles.riskLabel}>Assess The Risk:</AppText>
         {/* Placeholder for risk buttons */}
         <View style={styles.riskButtons}>

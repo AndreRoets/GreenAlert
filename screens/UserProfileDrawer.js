@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, useColorScheme } from 'react-native';
+import { Modal, View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { loadFromStorage } from '../services/storage';
@@ -7,6 +7,7 @@ import { useNotificationTest } from '../contexts/NotificationTestContext';
 import { getRandomMessage } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import AppText from '../components/AppText';
 import AppButton from '../components/AppButton';
 
@@ -16,9 +17,7 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
   const [loading, setLoading] = useState(true);
   const { triggerTestNotification } = useNotificationTest();
   const { budgetDetails } = useBudget();
-
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme, toggleTheme, themeMode } = useTheme();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -113,6 +112,7 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
           <AppText style={styles.email}>{user.email}</AppText>
         </View>
 
+        <AppButton title={`Switch to ${themeMode === 'light' ? 'Dark' : 'Light'} Mode`} onPress={toggleTheme} variant="secondary" />
         <AppButton title="Test Status Pop-up" onPress={handleTestNotification} />
         <AppButton title="Go Back to Setup" onPress={handleGoToSetup} variant="secondary" />
       </>

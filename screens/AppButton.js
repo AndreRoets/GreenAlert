@@ -1,10 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, useColorScheme } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { COLORS, SIZES, FONTS } from '../constants/theme'; // Assuming AppText is not a default export
+import { useTheme } from '../contexts/ThemeContext';
 
 const AppButton = ({ title, onPress, variant = 'primary', style }) => {
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   const buttonStyles = [styles.button, style];
   const textStyles = [styles.text];

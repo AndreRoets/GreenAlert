@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, StyleSheet, ScrollView, TouchableOpacity, Alert, useColorScheme, Platform
+  View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform
 } from 'react-native';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
@@ -9,6 +9,7 @@ import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
 import useCurrentDate from '../hooks/useCurrentDate';
+import { useTheme } from '../contexts/ThemeContext';
 
 const dayShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -86,8 +87,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
     navigation.navigate('DisposableDashboard', { budget: finalBudget, categories: activeCategories });
   };
 
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   const renderSpendItem = (spend, index) => (
     <AppCard key={index} style={styles.spendItem}>
@@ -95,13 +95,15 @@ export default function RecurringSpendsScreen({ route, navigation }) {
         <AppText style={styles.removeButtonText}>×</AppText>
       </TouchableOpacity>
       <AppInput
-        style={styles.input}
+        style={StyleSheet.flatten([styles.input, { color: theme.text }])}
+        placeholderTextColor={theme.textSecondary}
         placeholder="Description (e.g., Coffee)"
         value={spend.description}
         onChangeText={(text) => updateSpend(index, 'description', text)}
       />
       <AppInput
-        style={styles.input}
+        style={StyleSheet.flatten([styles.input, { color: theme.text }])}
+        placeholderTextColor={theme.textSecondary}
         placeholder={`Amount (${currency.symbol})`}
         keyboardType="numeric"
         value={spend.amount}
@@ -109,7 +111,8 @@ export default function RecurringSpendsScreen({ route, navigation }) {
       />
       {/* A simple text input for category for now. A picker would be better. */}
       <AppInput
-        style={styles.input}
+        style={StyleSheet.flatten([styles.input, { color: theme.text }])}
+        placeholderTextColor={theme.textSecondary}
         placeholder="Category"
         value={spend.category}
         onChangeText={(text) => updateSpend(index, 'category', text)}
@@ -122,7 +125,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
             {dayShortNames.map((dayName, dayIndex) => (
               <TouchableOpacity
                 key={dayIndex}
-                style={[styles.dayButton, spend.selectedDays[dayIndex] && styles.dayButtonSelected]}
+                style={[styles.dayButton, { borderColor: theme.border }, spend.selectedDays[dayIndex] && styles.dayButtonSelected]}
                 onPress={() => {
                   const newSelectedDays = { ...spend.selectedDays, [dayIndex]: !spend.selectedDays[dayIndex] };
                   updateSpend(index, 'selectedDays', newSelectedDays);
@@ -150,7 +153,8 @@ export default function RecurringSpendsScreen({ route, navigation }) {
         <View style={styles.daysPerWeekRow}>
           <AppText style={styles.toggleLabel}>How many days per week?</AppText>
           <AppInput
-            style={styles.daysInput}
+            style={StyleSheet.flatten([styles.daysInput, { color: theme.text }])}
+            placeholderTextColor={theme.textSecondary}
             keyboardType="number-pad"
             value={spend.daysPerWeek}
             onChangeText={(text) => updateSpend(index, 'daysPerWeek', text)}
@@ -204,7 +208,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.light.border,
   },
   dayButtonSelected: {
     backgroundColor: COLORS.primary,

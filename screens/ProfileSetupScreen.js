@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform, useColorScheme } from 'react-native';
+import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { saveToStorage, loadFromStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function ProfileSetupScreen({ route, navigation }) {
   const { userId, email } = route.params; // Get user info passed from SignUpScreen
@@ -37,8 +38,7 @@ export default function ProfileSetupScreen({ route, navigation }) {
     }
   };
 
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   return (
     <KeyboardAvoidingView
@@ -56,13 +56,16 @@ export default function ProfileSetupScreen({ route, navigation }) {
           autoCapitalize="words"
           value={firstName}
           onChangeText={setFirstName}
+          placeholderTextColor={theme.textSecondary}
+          style={{ color: theme.text }}
         />
         <AppInput
           placeholder="Last Name"
           autoCapitalize="words"
           value={lastName}
           onChangeText={setLastName}
-          style={{ marginTop: SIZES.base * 2 }}
+          placeholderTextColor={theme.textSecondary}
+          style={{ marginTop: SIZES.base * 2, color: theme.text }}
         />
       </View>
 

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, useColorScheme } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppButton from '../components/AppButton';
+import { useTheme } from '../contexts/ThemeContext';
 
 const defaultDisposableCategories = [
   'Food & Drinks',
@@ -41,8 +42,7 @@ export default function OnboardingScreen({ navigation, route }) {
     }
   };
 
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme] || COLORS.light;
+  const { theme } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>

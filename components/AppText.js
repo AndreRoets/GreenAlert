@@ -1,16 +1,15 @@
 import React from 'react';
-import { Text, StyleSheet, useColorScheme } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { Text, StyleSheet } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 const AppText = ({ style, children, ...props }) => {
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
-  const textStyle = {
-    color: theme.text,
-    ...styles.default,
-    ...style,
-  };
+  const textStyle = [
+    styles.default,
+    { color: theme.text },
+    style
+  ];
 
   return <Text style={textStyle} {...props}>{children}</Text>;
 };

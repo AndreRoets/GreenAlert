@@ -1,23 +1,23 @@
 import React from 'react';
-import { TextInput, StyleSheet, useColorScheme } from 'react-native';
-import { COLORS, SIZES, FONTS } from '../constants/theme';
+import { TextInput, StyleSheet } from 'react-native';
+import { SIZES, FONTS } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
-const AppInput = ({ style, ...props }) => {
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
-
-  const inputStyle = {
-    backgroundColor: theme.input,
-    borderColor: theme.border,
-    color: theme.text,
-    ...styles.input,
-    ...style,
-  };
+const AppInput = ({ style, placeholderTextColor, ...props }) => {
+  const { theme } = useTheme();
 
   return (
     <TextInput
-      style={inputStyle}
-      placeholderTextColor={theme.textSecondary}
+      style={[
+        styles.input,
+        { 
+          backgroundColor: theme.inputBackground,
+          color: theme.text,
+          borderColor: theme.border,
+        },
+        style
+      ]}
+      placeholderTextColor={placeholderTextColor || theme.textSecondary}
       {...props}
     />
   );
@@ -25,11 +25,12 @@ const AppInput = ({ style, ...props }) => {
 
 const styles = StyleSheet.create({
   input: {
-    ...FONTS.body3,
+    width: '100%',
     height: 55,
-    paddingHorizontal: SIZES.padding / 1.5,
     borderRadius: SIZES.radius,
+    paddingHorizontal: SIZES.padding,
     borderWidth: 1,
+    ...FONTS.body3,
   },
 });
 

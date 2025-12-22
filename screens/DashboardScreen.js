@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { loadFromStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
@@ -7,6 +7,7 @@ import AppText from '../components/AppText';
 import AppButton from '../components/AppButton';
 import useCurrentDate from '../hooks/useCurrentDate';
 import AppCard from './AppCard';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function DashboardScreen({ route, navigation }) {
   const [budgetData, setBudgetData] = useState(null);
@@ -15,9 +16,7 @@ export default function DashboardScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
   const today = useCurrentDate();
-
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   useEffect(() => {
     const fetchBudgetData = async () => {

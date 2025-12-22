@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, useColorScheme, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Platform } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
+import { useTheme } from '../contexts/ThemeContext';
 
 const allCategories = [
   'Housing', 'Transport', 'Food', 'Bills & Subscriptions', 'Personal',
@@ -75,7 +76,7 @@ export default function CategorySetupScreen({ route, navigation }) {
     <View key={category} style={styles.categoryRow}>
       <AppText style={styles.categoryText}>{category}</AppText>
       <Switch
-        trackColor={{ false: COLORS.dark.border, true: COLORS.primary }}
+        trackColor={{ false: theme.border, true: COLORS.primary }}
         thumbColor={Platform.OS === 'android' ? COLORS.primary : ''}
         onValueChange={() => toggleCategory(category)}
         value={categories[category]}
@@ -83,8 +84,7 @@ export default function CategorySetupScreen({ route, navigation }) {
     </View>
   );
 
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -93,7 +93,8 @@ export default function CategorySetupScreen({ route, navigation }) {
 
       <View style={styles.customCategoryContainer}>
         <AppInput
-          style={styles.customCategoryInput}
+          style={StyleSheet.flatten([styles.customCategoryInput, { color: theme.text }])}
+          placeholderTextColor={theme.textSecondary}
           placeholder="Add a custom category..."
           value={customCategory}
           onChangeText={setCustomCategory}

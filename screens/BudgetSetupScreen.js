@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert, useColorScheme } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function BudgetSetupScreen({ route, navigation }) {
   const { activeCategories, isGuest, currency, existingBudget } = route.params;
@@ -73,8 +74,7 @@ export default function BudgetSetupScreen({ route, navigation }) {
     navigation.navigate('Dashboard', { budgetData, isGuest }); // Pass data for guest mode
   };
 
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   return (
     <KeyboardAvoidingView
@@ -88,7 +88,8 @@ export default function BudgetSetupScreen({ route, navigation }) {
         <AppCard style={styles.totalContainer}>
           <AppText style={styles.totalLabel}>Total Budget Amount</AppText>
           <AppInput
-            style={styles.totalInput}
+            style={StyleSheet.flatten([styles.totalInput, { color: theme.text }])}
+            placeholderTextColor={theme.textSecondary}
             placeholder={`${currency.symbol}0.00`}
             keyboardType="numeric"
             value={totalBudget}
@@ -102,7 +103,8 @@ export default function BudgetSetupScreen({ route, navigation }) {
         <View style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
           <AppText style={styles.categoryText}>When do you get paid?</AppText>
           <AppInput
-            style={styles.categoryInput}
+            style={StyleSheet.flatten([styles.categoryInput, { color: theme.text }])}
+            placeholderTextColor={theme.textSecondary}
             placeholder="Day of month (e.g., 15)"
             keyboardType="number-pad"
             value={paymentDay}
@@ -115,7 +117,8 @@ export default function BudgetSetupScreen({ route, navigation }) {
           <View key={category} style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
             <AppText style={styles.categoryText}>{category}</AppText>
             <AppInput
-              style={styles.categoryInput}
+              style={StyleSheet.flatten([styles.categoryInput, { color: theme.text }])}
+              placeholderTextColor={theme.textSecondary}
               placeholder={`${currency.symbol}0.00`}
               keyboardType="numeric"
               value={categoryBudgets[category]}

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Modal, FlatList, useColorScheme } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Modal, FlatList } from 'react-native';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
+import { useTheme } from '../contexts/ThemeContext';
 
 // A more comprehensive list of world currencies with names
 // prettier-ignore
@@ -41,8 +42,7 @@ export default function AuthScreen({ navigation }) {
   const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   const handleSignUp = async () => {
     // Basic validation
@@ -93,13 +93,16 @@ export default function AuthScreen({ navigation }) {
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
+          placeholderTextColor={theme.textSecondary}
+          style={{ color: theme.text }}
         />
         <AppInput
           placeholder="Password"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-          style={{ marginTop: SIZES.base * 2 }}
+          placeholderTextColor={theme.textSecondary}
+          style={{ marginTop: SIZES.base * 2, color: theme.text }}
         />
       </View>
 

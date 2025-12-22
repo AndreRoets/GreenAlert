@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Modal, useColorScheme } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -7,6 +7,7 @@ import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
 import useCurrentDate from '../hooks/useCurrentDate';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function LeftoverBudgetScreen({ route, navigation }) {
   const { unallocated, paymentDay, activeCategories, isGuest, currency } = route.params;
@@ -22,8 +23,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
   const [hasCustomized, setHasCustomized] = useState(false);
 
   const today = useCurrentDate();
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   const calculateDaysLeft = useMemo(() => {
     if (!paymentDay) return 0;
@@ -222,7 +222,8 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
               <View key={index} style={[styles.inputRow, { borderBottomColor: theme.border }]}>
                 <AppText style={styles.inputLabel}>{formatDateForDay(index)}</AppText>
                 <AppInput
-                  style={styles.input}
+                  style={StyleSheet.flatten([styles.input, { color: theme.text }])}
+                  placeholderTextColor={theme.textSecondary}
                   placeholder={`${currency.symbol}0.00`}
                   keyboardType="numeric"
                   value={budget}
@@ -235,7 +236,8 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
               <View key={index} style={[styles.inputRow, { borderBottomColor: theme.border }]}>
                 <AppText style={styles.inputLabel}>Week {index + 1}</AppText>
                 <AppInput
-                  style={styles.input}
+                  style={StyleSheet.flatten([styles.input, { color: theme.text }])}
+                  placeholderTextColor={theme.textSecondary}
                   placeholder={`${currency.symbol}0.00`}
                   keyboardType="numeric"
                   value={budget}
@@ -260,7 +262,8 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
           <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
             <AppText style={styles.modalHeader}>Set Savings Goal</AppText>
             <AppInput
-              style={styles.modalInput}
+              style={StyleSheet.flatten([styles.modalInput, { color: theme.text }])}
+              placeholderTextColor={theme.textSecondary}
               placeholder={`${currency.symbol}0.00`}
               keyboardType="numeric"
               value={savingsGoal}

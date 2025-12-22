@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
-  useColorScheme,
 } from 'react-native';
 import { loadFromStorage } from '../services/storage';
 import { scheduleBudgetNotifications } from '../services/notificationService';
@@ -20,6 +19,7 @@ import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
 import useCurrentDate from '../hooks/useCurrentDate';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function DisposableDashboardScreen({ route, navigation }) {
   const [budget, setBudget] = useState(null);
@@ -37,9 +37,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [categories, setCategories] = useState([]);
   const today = useCurrentDate();
   const prevBudgetDetailsRef = useRef();
-
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   const initializeBudget = useCallback(async () => {
     console.log("Initializing budget...");
@@ -542,14 +540,16 @@ export default function DisposableDashboardScreen({ route, navigation }) {
           <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
             <AppText style={styles.modalHeader}>Add Expense</AppText>
             <AppInput
-              style={styles.modalInput}
+              style={StyleSheet.flatten([styles.modalInput, { color: theme.text }])}
+              placeholderTextColor={theme.textSecondary}
               placeholder={`Amount (${budgetDetails.currency?.symbol || '$'})`}
               keyboardType="numeric"
               value={newExpense.amount}
               onChangeText={(text) => setNewExpense({ ...newExpense, amount: text })}
             />
             <AppInput
-              style={styles.modalInput}
+              style={StyleSheet.flatten([styles.modalInput, { color: theme.text }])}
+              placeholderTextColor={theme.textSecondary}
               placeholder="Description (e.g., Lunch)"
               value={newExpense.description}
               onChangeText={(text) => setNewExpense({ ...newExpense, description: text })}
@@ -562,7 +562,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
             <View style={styles.switchContainer}>
               <AppText style={styles.switchLabel}>Was this necessary?</AppText>
               <Switch
-                trackColor={{ false: COLORS.dark.border, true: COLORS.primary }}
+                trackColor={{ false: theme.border, true: COLORS.primary }}
                 thumbColor={Platform.OS === 'android' ? COLORS.primary : ''}
                 onValueChange={(value) => setNewExpense({ ...newExpense, necessary: value })}
                 value={newExpense.necessary} />

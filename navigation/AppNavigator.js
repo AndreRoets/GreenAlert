@@ -21,6 +21,7 @@ import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import UserProfileDrawer from '../screens/UserProfileDrawer';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
 import { useNotificationTest } from '../contexts/NotificationTestContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Stack = createStackNavigator();
 
@@ -38,6 +39,7 @@ export default function AppNavigator() {
   const [initialRoute, setInitialRoute] = useState(null);
   const [isProfileDrawerVisible, setProfileDrawerVisible] = useState(false);
   const { testNotification } = useNotificationTest();
+  const { theme } = useTheme();
 
   useEffect(() => {
     // --- WORKAROUND FOR EXPO GO ---
@@ -141,14 +143,14 @@ export default function AppNavigator() {
         initialRouteName={initialRoute}
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: theme.background,
             elevation: 0, // Remove shadow on Android
             shadowOpacity: 0, // Remove shadow on iOS
             borderBottomWidth: 2,
-            borderBottomColor: '#EEEEEE',
+            borderBottomColor: theme.border || '#EEEEEE',
             height: 110,
           },
-          headerTintColor: '#000000',
+          headerTintColor: theme.text,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
@@ -180,7 +182,7 @@ export default function AppNavigator() {
                   })
                 )}
                 style={{ marginRight: 15 }} >
-                <Text style={{ color: '#000000', fontSize: 16 }}>Restart</Text>
+                <Text style={{ color: theme.text, fontSize: 16 }}>Restart</Text>
               </TouchableOpacity>
             ),
           })} />
@@ -205,7 +207,7 @@ export default function AppNavigator() {
                   })
                 )}
                 style={{ marginRight: 15 }} >
-                <Text style={{ color: '#000000', fontSize: 16 }}>Restart</Text>
+                <Text style={{ color: theme.text, fontSize: 16 }}>Restart</Text>
               </TouchableOpacity>
             ),
           })} />

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert, useColorScheme } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
 import AppButton from '../components/AppButton';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function DisposableSetupScreen({ route, navigation }) {
   const { activeCategories, isGuest, currency, existingBudget } = route.params;
@@ -46,8 +47,7 @@ export default function DisposableSetupScreen({ route, navigation }) {
     });
   };
 
-  const colorScheme = useColorScheme();
-  const theme = COLORS[colorScheme];
+  const { theme } = useTheme();
 
   return (
     <KeyboardAvoidingView
@@ -62,6 +62,8 @@ export default function DisposableSetupScreen({ route, navigation }) {
           <AppText style={styles.inputLabel}>Total Disposable Income</AppText>
           <AppInput
             placeholder={`${currency.symbol}0.00`}
+            placeholderTextColor={theme.textSecondary}
+            style={{ color: theme.text }}
             keyboardType="numeric"
             value={disposableIncome}
             onChangeText={handleIncomeChange}
@@ -72,6 +74,8 @@ export default function DisposableSetupScreen({ route, navigation }) {
           <AppText style={styles.inputLabel}>When do you get paid?</AppText>
           <AppInput
             placeholder="Day of month (e.g., 15)"
+            placeholderTextColor={theme.textSecondary}
+            style={{ color: theme.text }}
             keyboardType="number-pad"
             value={paymentDay}
             onChangeText={handlePaymentDayChange}
