@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -17,6 +18,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
   const { budget, activeCategories, isGuest, currency } = route.params;
   const [recurringSpends, setRecurringSpends] = useState([]);
   const today = useCurrentDate();
+  const insets = useSafeAreaInsets();
 
   const daysInPeriod = useMemo(() => {
     if (budget.viewPreference !== 'daily') return [];
@@ -166,7 +168,7 @@ export default function RecurringSpendsScreen({ route, navigation }) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <AppText style={styles.header}>Expected Recurring Spends</AppText>
         <AppText style={styles.subHeader}>

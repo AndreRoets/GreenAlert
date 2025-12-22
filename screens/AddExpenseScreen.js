@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
 import AppInput from '../components/AppInput';
@@ -8,9 +9,10 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function AddExpenseScreen() {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
       <AppText style={styles.header}>Add Expense</AppText>
       <AppText style={[styles.subHeader, { color: theme.textSecondary }]}>Be intentional. Is this expense truly necessary?</AppText>
 

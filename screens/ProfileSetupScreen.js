@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToStorage, loadFromStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -39,11 +40,12 @@ export default function ProfileSetupScreen({ route, navigation }) {
   };
 
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[styles.container, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}
     >
       <View style={styles.headerContainer}>
         <AppText style={styles.title}>Just a little more about you...</AppText>

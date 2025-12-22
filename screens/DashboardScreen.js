@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadFromStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -17,6 +18,7 @@ export default function DashboardScreen({ route, navigation }) {
   const isFocused = useIsFocused();
   const today = useCurrentDate();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchBudgetData = async () => {
@@ -83,7 +85,7 @@ export default function DashboardScreen({ route, navigation }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
       <AppCard style={styles.summaryContainer}>
         <AppText style={styles.label}>Money Left Over</AppText>
         <AppText style={[styles.amount, { color: statusColor }]}>

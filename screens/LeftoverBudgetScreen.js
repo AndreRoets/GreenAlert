@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -24,6 +25,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
 
   const today = useCurrentDate();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const calculateDaysLeft = useMemo(() => {
     if (!paymentDay) return 0;
@@ -144,7 +146,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[styles.container, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <AppText style={styles.header}>Budget Your Leftover Money</AppText>
@@ -208,7 +210,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
         visible={isCustomizeModalVisible}
         onRequestClose={() => setCustomizeModalVisible(false)}
       >
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.modalContainer, { backgroundColor: theme.background }]}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.modalContainer, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <AppText style={styles.header}>Customize Budget</AppText>
             <View style={[styles.allocationSummary, { borderBottomColor: theme.border }]}>
@@ -259,7 +261,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
         onRequestClose={() => setSavingsModalVisible(false)}
       >
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card, paddingBottom: SIZES.padding + insets.bottom }]}>
             <AppText style={styles.modalHeader}>Set Savings Goal</AppText>
             <AppInput
               style={StyleSheet.flatten([styles.modalInput, { color: theme.text }])}

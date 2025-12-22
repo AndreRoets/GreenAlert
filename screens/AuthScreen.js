@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, Modal, FlatList } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToStorage } from '../services/storage';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -43,6 +44,7 @@ export default function AuthScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const handleSignUp = async () => {
     // Basic validation
@@ -129,7 +131,7 @@ export default function AuthScreen({ navigation }) {
         }}
       >
         <KeyboardAvoidingView behavior="padding" style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card, paddingBottom: SIZES.padding + insets.bottom }]}>
             <AppText style={styles.modalHeader}>Select Currency</AppText>
             <AppInput
               placeholder="Search by country or currency code..."

@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import AppNavigator from './navigation/AppNavigator.js';
 import { NotificationTestProvider } from './contexts/NotificationTestContext.js';
@@ -18,12 +19,14 @@ Notifications.setNotificationHandler({
 
 export default function App() {
   return (
-    <BudgetProvider>
-      <NotificationTestProvider>
-        <ThemeProvider>
-          <AppNavigator />
-        </ThemeProvider>
-      </NotificationTestProvider>
-    </BudgetProvider>
+    <SafeAreaProvider>
+      <BudgetProvider>
+        <NotificationTestProvider>
+          <ThemeProvider>
+            <AppNavigator />
+          </ThemeProvider>
+        </NotificationTestProvider>
+      </BudgetProvider>
+    </SafeAreaProvider>
   );
 }

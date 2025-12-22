@@ -11,6 +11,7 @@ import {
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadFromStorage } from '../services/storage';
 import { scheduleBudgetNotifications } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
@@ -41,6 +42,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const today = useCurrentDate();
   const prevBudgetDetailsRef = useRef();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const initializeBudget = useCallback(async () => {
     console.log("Initializing budget...");
@@ -562,7 +564,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
       <AppCard style={styles.summaryContainer}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AppText style={styles.label}>{budgetDetails.label}</AppText>
@@ -644,7 +646,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         onRequestClose={() => setModalVisible(false)}
       >
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card, paddingBottom: SIZES.padding + insets.bottom }]}>
             <AppText style={styles.modalHeader}>Add Expense</AppText>
             <AppInput
               style={StyleSheet.flatten([styles.modalInput, { color: theme.text }])}
@@ -698,7 +700,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         onRequestClose={() => setCalculatorVisible(false)}
       >
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card, paddingBottom: SIZES.padding + insets.bottom }]}>
             <AppText style={styles.modalHeader}>Budget Impact Calculator</AppText>
             <AppText style={{textAlign: 'center', marginBottom: 15, color: theme.textSecondary}}>
               See how an expense affects your future budget.
@@ -763,7 +765,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         onRequestClose={() => setCategoryModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.categoryModalContent, { backgroundColor: theme.card }]}>
+          <View style={[styles.categoryModalContent, { backgroundColor: theme.card, paddingBottom: SIZES.padding + insets.bottom }]}>
             <AppText style={styles.modalHeader}>Select Category</AppText>
             <ScrollView>
               {categories.map((cat, index) => (
