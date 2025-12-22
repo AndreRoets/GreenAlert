@@ -20,6 +20,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
   const [dailyBudgets, setDailyBudgets] = useState([]);
   const [weeklyBudgets, setWeeklyBudgets] = useState([]);
 
+  const [userAllocatedIndices, setUserAllocatedIndices] = useState({});
   // This flag tracks if the user has entered the customization modal
   const [hasCustomized, setHasCustomized] = useState(false);
 
@@ -75,6 +76,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
     } else {
       setView(selectedView);
       setHasCustomized(false); // Reset customization when view changes
+      setUserAllocatedIndices({});
       // Initialize budget arrays when view is selected
       if (selectedView === 'daily') {
         const avg = daysLeft > 0 ? (spendableUnallocated / daysLeft).toFixed(2) : '0';
@@ -92,8 +94,18 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
     const isDaily = view === 'daily';
     let newBudgets = isDaily ? [...dailyBudgets] : [...weeklyBudgets];
 
+    // Clear auto-filled values (values not in userAllocatedIndices and not the current index)
+    for (let i = 0; i < newBudgets.length; i++) {
+      if (i !== index && !userAllocatedIndices[i]) {
+        newBudgets[i] = '';
+      }
+    }
+
     // Update the specific budget
     newBudgets[index] = amount;
+    
+    // Mark as user allocated
+    setUserAllocatedIndices(prev => ({ ...prev, [index]: true }));
     
     if (isDaily) {
       setDailyBudgets(newBudgets);
@@ -127,11 +139,18 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
 
     if (emptyCount > 0) {
       const avg = (remaining / emptyCount).toFixed(2);
-      const newBudgets = currentBudgets.map(val => {
+      const nextUserAllocatedIndices = { ...userAllocatedIndices };
+
+      const newBudgets = currentBudgets.map((val, idx) => {
         const num = parseFloat(val);
         if (!isNaN(num) && num > 0) return val;
+        
+        // This slot is being auto-filled, so remove it from userAllocatedIndices
+        delete nextUserAllocatedIndices[idx];
         return avg;
       });
+
+      setUserAllocatedIndices(nextUserAllocatedIndices);
 
       if (isDaily) setDailyBudgets(newBudgets);
       else setWeeklyBudgets(newBudgets);
@@ -150,6 +169,8 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
       Alert.alert("Selection Needed", "Please select a daily or weekly budget view.");
       return;
     }
+
+    setCustomizeModalVisible(false);
 
     // If user customized, save the detailed budgets. Otherwise, they will be undefined.
     const budgetData = {
@@ -230,6 +251,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
             <AppButton variant="secondary" title="Customize Allocation" onPress={() => { 
               if (!hasCustomized) {
                 setDailyBudgets(Array(daysLeft).fill(''));
+                setUserAllocatedIndices({});
               }
               setCustomizeModalVisible(true); 
               setHasCustomized(true); 
@@ -248,6 +270,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
             <AppButton variant="secondary" title="Customize Allocation" onPress={() => { 
               if (!hasCustomized) {
                 setWeeklyBudgets(Array(weeksLeft).fill(''));
+                setUserAllocatedIndices({});
               }
               setCustomizeModalVisible(true); 
               setHasCustomized(true); 
@@ -275,28 +298,34 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
             {view === 'daily' && dailyBudgets.map((budget, index) => (
               <View key={index} style={[styles.inputRow, { borderBottomColor: theme.border }]}>
                 <AppText style={styles.inputLabel}>{formatDateForDay(index)}</AppText>
-                <AppInput
-                  style={StyleSheet.flatten([styles.input, { color: theme.text }])}
-                  placeholderTextColor={theme.textSecondary}
-                  placeholder={`${currency.symbol}0.00`}
-                  keyboardType="numeric"
-                  value={budget}
-                  onChangeText={(text) => handleBudgetChange(index, text)}
-                />
+                <View style={styles.currencyInputContainer}>
+                  <AppText style={[styles.currencyPrefix, { color: theme.text }]}>{currency.symbol}</AppText>
+                  <AppInput
+                    style={StyleSheet.flatten([styles.input, { color: theme.text, textAlign: 'left', minWidth: 80 }])}
+                    placeholderTextColor={theme.textSecondary}
+                    placeholder="0.00"
+                    keyboardType="numeric"
+                    value={budget}
+                    onChangeText={(text) => handleBudgetChange(index, text)}
+                  />
+                </View>
               </View>
             ))}
 
             {view === 'weekly' && weeklyBudgets.map((budget, index) => (
               <View key={index} style={[styles.inputRow, { borderBottomColor: theme.border }]}>
                 <AppText style={styles.inputLabel}>Week {index + 1}</AppText>
-                <AppInput
-                  style={StyleSheet.flatten([styles.input, { color: theme.text }])}
-                  placeholderTextColor={theme.textSecondary}
-                  placeholder={`${currency.symbol}0.00`}
-                  keyboardType="numeric"
-                  value={budget}
-                  onChangeText={(text) => handleBudgetChange(index, text)}
-                />
+                <View style={styles.currencyInputContainer}>
+                  <AppText style={[styles.currencyPrefix, { color: theme.text }]}>{currency.symbol}</AppText>
+                  <AppInput
+                    style={StyleSheet.flatten([styles.input, { color: theme.text, textAlign: 'left', minWidth: 80 }])}
+                    placeholderTextColor={theme.textSecondary}
+                    placeholder="0.00"
+                    keyboardType="numeric"
+                    value={budget}
+                    onChangeText={(text) => handleBudgetChange(index, text)}
+                  />
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -394,6 +423,13 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     minWidth: 120,
     paddingHorizontal: 0,
+  },
+  currencyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  currencyPrefix: {
+    ...FONTS.body3,
   },
   footer: { padding: SIZES.padding, borderTopWidth: 1 },
   modalContent: {
