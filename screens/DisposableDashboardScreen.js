@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Switch,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { loadFromStorage } from '../services/storage';
 import { scheduleBudgetNotifications } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
@@ -29,6 +30,8 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [expenses, setExpenses] = useState([]);
   const [lastProcessedExpenseCount, setLastProcessedExpenseCount] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isCalculatorVisible, setCalculatorVisible] = useState(false);
+  const [calculatorAmount, setCalculatorAmount] = useState('');
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const [lastWarningDate, setLastWarningDate] = useState(null);
   const [newExpense, setNewExpense] = useState({ amount: '', description: '', necessary: false, category: '' });
@@ -282,6 +285,51 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     };
   }, [budget, adjustedBudgets, currentDay, currentWeek, expenses, today]);
 
+  const calculatorImpact = useMemo(() => {
+    const amount = parseFloat(calculatorAmount);
+    if (!amount || isNaN(amount)) return null;
+
+    const currentRemaining = budgetDetails.amount;
+    const newRemaining = currentRemaining - amount;
+
+    if (newRemaining >= 0) {
+      return {
+        status: 'safe',
+        remainingAfter: newRemaining
+      };
+    }
+
+    const overspend = Math.abs(newRemaining);
+    const periodsLeft = (budgetDetails.isDaily ? budgetDetails.daysLeft : budgetDetails.weeksLeft) - 1;
+
+    if (periodsLeft <= 0) {
+      return {
+        status: 'warning',
+        message: "This exceeds your current budget and there are no future periods left in this cycle to cover it."
+      };
+    }
+
+    const deduction = overspend / periodsLeft;
+
+    // Calculate new future budget (based on next period)
+    const currentIndex = budgetDetails.isDaily ? currentDay - 1 : currentWeek - 1;
+    const nextIndex = currentIndex + 1;
+    let futureBudgetBase = 0;
+    if (adjustedBudgets && adjustedBudgets.length > nextIndex) {
+      futureBudgetBase = adjustedBudgets[nextIndex];
+    }
+    const newFutureBudget = Math.max(0, futureBudgetBase - deduction);
+    
+    return {
+      status: 'danger',
+      overspend,
+      periodsLeft,
+      deduction,
+      newFutureBudget,
+      periodType: budgetDetails.isDaily ? 'days' : 'weeks'
+    };
+  }, [calculatorAmount, budgetDetails, adjustedBudgets, currentDay, currentWeek]);
+
   useEffect(() => {
     const prevDetails = prevBudgetDetailsRef.current;
     const currentDetailsString = JSON.stringify(budgetDetails);
@@ -516,7 +564,12 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <AppCard style={styles.summaryContainer}>
-        <AppText style={styles.label}>{budgetDetails.label}</AppText>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <AppText style={styles.label}>{budgetDetails.label}</AppText>
+          <TouchableOpacity onPress={() => setCalculatorVisible(true)} style={{ marginLeft: 8, padding: 4 }}>
+            <Ionicons name="calculator-outline" size={20} color={theme.text} />
+          </TouchableOpacity>
+        </View>
         <AppText style={[styles.amount, { color: budgetDetails.statusColor }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</AppText>
         <AppText style={styles.subAmount}>Remaining</AppText>
 
@@ -641,6 +694,71 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       <Modal
         animationType="slide"
         transparent={true}
+        visible={isCalculatorVisible}
+        onRequestClose={() => setCalculatorVisible(false)}
+      >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <AppText style={styles.modalHeader}>Budget Impact Calculator</AppText>
+            <AppText style={{textAlign: 'center', marginBottom: 15, color: theme.textSecondary}}>
+              See how an expense affects your future budget.
+            </AppText>
+            
+            <AppInput
+              style={StyleSheet.flatten([styles.modalInput, { color: theme.text }])}
+              placeholderTextColor={theme.textSecondary}
+              placeholder={`Expense Amount (${budgetDetails.currency?.symbol || '$'})`}
+              keyboardType="numeric"
+              value={calculatorAmount}
+              onChangeText={setCalculatorAmount}
+              autoFocus={true}
+            />
+
+            {calculatorImpact && (
+              <View style={[styles.impactContainer, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                {calculatorImpact.status === 'safe' && (
+                  <AppText style={{ color: COLORS.success, textAlign: 'center' }}>
+                    You're good! You will still have {budgetDetails.currency?.symbol}{calculatorImpact.remainingAfter.toFixed(2)} left for this {budgetDetails.isDaily ? 'day' : 'week'}.
+                  </AppText>
+                )}
+                {calculatorImpact.status === 'warning' && (
+                  <AppText style={{ color: COLORS.error, textAlign: 'center' }}>
+                    {calculatorImpact.message}
+                  </AppText>
+                )}
+                {calculatorImpact.status === 'danger' && (
+                  <View>
+                    <AppText style={{ color: COLORS.error, textAlign: 'center', marginBottom: 5, fontWeight: 'bold' }}>
+                      Over Budget by {budgetDetails.currency?.symbol}{calculatorImpact.overspend.toFixed(2)}
+                    </AppText>
+                    <AppText style={{ color: theme.text, textAlign: 'center' }}>
+                      To cover this, your budget for the next {calculatorImpact.periodsLeft} {calculatorImpact.periodType} will be:
+                    </AppText>
+                    <AppText style={{ color: COLORS.error, textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginTop: 5 }}>
+                      {budgetDetails.currency?.symbol}{calculatorImpact.newFutureBudget.toFixed(2)} / {budgetDetails.isDaily ? 'day' : 'week'}
+                    </AppText>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <View style={styles.modalButtonContainer}>
+              <AppButton
+                style={{ width: '100%' }}
+                onPress={() => {
+                  setCalculatorVisible(false);
+                  setCalculatorAmount('');
+                }}
+                title="Done"
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
         visible={isCategoryModalVisible}
         onRequestClose={() => setCategoryModalVisible(false)}
       >
@@ -667,7 +785,10 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
 
       <View style={[styles.footer, { borderTopColor: theme.border }]}>
-        <AppButton title="Add Expense" onPress={() => setModalVisible(true)} />
+        <AppButton 
+          title="Add Expense" 
+          onPress={() => setModalVisible(true)} 
+        />
       </View>
     </View>
   );
@@ -772,4 +893,11 @@ const styles = StyleSheet.create({
   },
   categoryItemText: { ...FONTS.body3, textAlign: 'center' },
   footer: { paddingTop: SIZES.base * 2, borderTopWidth: 1 },
+  impactContainer: {
+    padding: 15,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+    marginBottom: 20,
+    marginTop: 10,
+  },
 });
