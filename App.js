@@ -14,6 +14,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
+
 export default function App() {
   return (
     <BudgetProvider>

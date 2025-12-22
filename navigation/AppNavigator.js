@@ -16,7 +16,7 @@ import LeftoverBudgetScreen from '../screens/LeftoverBudgetScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import RecurringSpendsScreen from '../screens/RecurringSpendsScreen';
 import DisposableDashboardScreen from '../screens/DisposableDashboardScreen';
-import { loadFromStorage } from '../services/storage';
+import { loadFromStorage, saveToStorage } from '../services/storage';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import UserProfileDrawer from '../screens/UserProfileDrawer';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
@@ -72,26 +72,63 @@ export default function AppNavigator() {
 
   useEffect(() => {
     registerForPushNotificationsAsync();
-    const checkOnboarding = async () => {
+    const checkInitialRoute = async () => {
       const session = await loadFromStorage('userSession');
-      if (session && !session.isGuest) {
-        const budgetData = await loadFromStorage('userBudget');
-        const hasCompleted = await loadFromStorage('hasCompletedOnboarding');
-        if (hasCompleted && budgetData?.viewPreference) {
-          setInitialRoute('DisposableDashboard');
-          return;
+      const hasCompletedOnboarding = await loadFromStorage('hasCompletedOnboarding');
+
+      // If user is logged in and has completed onboarding, go to the correct dashboard
+      if (session && !session.isGuest && hasCompletedOnboarding) {
+        let budgetData = await loadFromStorage('userBudget');
+
+        // --- BUDGET RESET LOGIC ---
+        // Checks if we have entered a new pay cycle and resets the budget if so.
+        if (budgetData && budgetData.payDay) {
+          const now = new Date();
+          const currentDay = now.getDate();
+          const payDay = parseInt(budgetData.payDay, 10);
+
+          // Determine the start date of the current cycle
+          let cycleStartDate = new Date(now.getFullYear(), now.getMonth(), payDay);
+          if (currentDay < payDay) {
+            // If today is before pay day, we are still in the cycle that started last month
+            cycleStartDate.setMonth(cycleStartDate.getMonth() - 1);
+          }
+          cycleStartDate.setHours(0, 0, 0, 0);
+
+          const lastCycleStart = budgetData.lastCycleStart ? new Date(budgetData.lastCycleStart) : null;
+
+          // If it's a new cycle (or first time tracking), reset.
+          if (!lastCycleStart || cycleStartDate > lastCycleStart) {
+            const nextPayDate = new Date(cycleStartDate);
+            nextPayDate.setMonth(nextPayDate.getMonth() + 1);
+            const daysInCycle = Math.round((nextPayDate - cycleStartDate) / (1000 * 60 * 60 * 24));
+            const totalAmount = parseFloat(budgetData.totalBudget || budgetData.disposableIncome || 0);
+
+            budgetData = {
+              ...budgetData,
+              spent: 0,
+              lastCycleStart: cycleStartDate.toISOString(),
+              dailyLimit: daysInCycle > 0 ? totalAmount / daysInCycle : 0,
+              weeklyLimit: daysInCycle > 0 ? (totalAmount / daysInCycle) * 7 : 0,
+            };
+            // Log the reset for debugging purposes
+            console.log('Budget reset triggered. New cycle start:', cycleStartDate);
+            await saveToStorage('userBudget', budgetData);
+          }
         }
-        if (hasCompleted) {
-          setInitialRoute('Dashboard');
+
+        if (budgetData?.viewPreference) {
+          setInitialRoute('DisposableDashboard');
         } else {
-          setInitialRoute('Onboarding');
+          setInitialRoute('Dashboard');
         }
       } else {
+        // For new users, guests, or users who haven't finished onboarding, start at Auth.
         setInitialRoute('Auth');
       }
     };
 
-    checkOnboarding();
+    checkInitialRoute();
   }, []);
 
   if (!initialRoute) {
