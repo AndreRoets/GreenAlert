@@ -68,7 +68,7 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
     return budgets.reduce((sum, val) => sum + (parseFloat(val) || 0), 0) || 0;
   }, [view, dailyBudgets, weeklyBudgets, hasCustomized]);
 
-  const remainingToAllocate = spendableUnallocated - allocatedSum;
+  const remainingToAllocate = Math.round((spendableUnallocated - allocatedSum) * 100) / 100;
 
   const handleSelectView = (selectedView) => {
     if (view === selectedView) {
@@ -119,14 +119,14 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
     const currentBudgets = isDaily ? dailyBudgets : weeklyBudgets;
     
     let allocated = 0;
-    let emptyCount = 0;
+    let emptyIndices = [];
 
-    currentBudgets.forEach(val => {
+    currentBudgets.forEach((val, idx) => {
       const num = parseFloat(val);
       if (!isNaN(num) && num > 0) {
         allocated += num;
       } else {
-        emptyCount++;
+        emptyIndices.push(idx);
       }
     });
 
@@ -137,17 +137,28 @@ export default function LeftoverBudgetScreen({ route, navigation }) {
       return;
     }
 
-    if (emptyCount > 0) {
-      const avg = (remaining / emptyCount).toFixed(2);
-      const nextUserAllocatedIndices = { ...userAllocatedIndices };
+    if (emptyIndices.length > 0) {
+      // Work in cents to avoid floating point issues and ensure exact distribution
+      const remainingCents = Math.round(remaining * 100);
+      const count = emptyIndices.length;
+      
+      const baseAmountCents = Math.floor(remainingCents / count);
+      const remainderCents = remainingCents % count;
 
-      const newBudgets = currentBudgets.map((val, idx) => {
-        const num = parseFloat(val);
-        if (!isNaN(num) && num > 0) return val;
+      const nextUserAllocatedIndices = { ...userAllocatedIndices };
+      const newBudgets = [...currentBudgets];
+
+      emptyIndices.forEach((budgetIndex, i) => {
+        let amountCents = baseAmountCents;
+        // Distribute the remainder cents to the first few slots
+        if (i < remainderCents) {
+          amountCents += 1;
+        }
+        
+        newBudgets[budgetIndex] = (amountCents / 100).toFixed(2);
         
         // This slot is being auto-filled, so remove it from userAllocatedIndices
-        delete nextUserAllocatedIndices[idx];
-        return avg;
+        delete nextUserAllocatedIndices[budgetIndex];
       });
 
       setUserAllocatedIndices(nextUserAllocatedIndices);
