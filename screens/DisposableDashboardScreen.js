@@ -318,57 +318,111 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   ]);
 
   useEffect(() => {
-    if (!budget || expenses.length <= lastProcessedExpenseCount) return;
+    if (!budget) return;
 
-    const { overspentAmount, isDaily, isWeekly, daysLeft, weeksLeft } =
-      budgetDetails;
-
-    if (overspentAmount > 0) {
-      Alert.alert(
-        "Budget Overspent",
-        `You've overspent by ${budgetDetails.currency.symbol}${overspentAmount.toFixed(2)}. This will be deducted from your future budgets.`
-      );
-
-      // Use a fresh copy of the original budgets if they exist, otherwise start empty.
-      let newAdjustedBudgets = budget.dailyBudgets ? [...budget.dailyBudgets] : (budget.weeklyBudgets ? [...budget.weeklyBudgets] : []);
-
-      // If no pre-set budgets exist, create an evenly distributed one for the whole period.
-      if (newAdjustedBudgets.length === 0) {
-          const spendableTotal = budget.total - (budget.savingsGoal || 0);
-          if (isDaily && daysLeft > 0) {
-              const dailyAverage = spendableTotal / daysLeft;
-              newAdjustedBudgets = Array(daysLeft).fill(dailyAverage); // Create for the entire period
-          } else if (isWeekly && weeksLeft > 0) {
-              const weeklyAverage = spendableTotal / weeksLeft;
-              newAdjustedBudgets = Array(weeksLeft).fill(weeklyAverage); // Create for the entire period
-          }
+    const calculateDuration = () => {
+      if (!budget || !budget.paymentDay) return { days: 0, weeks: 0 };
+      const currentDayNum = today.getDate();
+      let periodEndDate;
+      if (currentDayNum < budget.paymentDay) {
+        periodEndDate = new Date(today.getFullYear(), today.getMonth(), budget.paymentDay);
+      } else {
+        const nextMonth = new Date(today);
+        nextMonth.setMonth(today.getMonth() + 1);
+        periodEndDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), budget.paymentDay);
       }
-      
-      const index = isDaily ? currentDay : currentWeek;
-      const remainingPeriods = newAdjustedBudgets.length - index;
+      periodEndDate.setHours(23, 59, 59, 999);
+      const diffTime = Math.max(0, periodEndDate.getTime() - today.getTime());
+      const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return { days, weeks: Math.max(1, Math.ceil(days / 7)) };
+    };
 
-      if (remainingPeriods > 0) {
-        const deduction = overspentAmount / remainingPeriods;
-        for (let i = index; i < newAdjustedBudgets.length; i++) {
-          newAdjustedBudgets[i] = Math.max(0, (newAdjustedBudgets[i] || 0) - deduction);
+    const { days, weeks } = calculateDuration();
+    const isDaily = budget.viewPreference === 'daily';
+    const isWeekly = budget.viewPreference === 'weekly';
+
+    // 1. Initialize Base Budgets
+    let newBudgets = [];
+    if (isDaily) {
+      if (budget.dailyBudgets && budget.dailyBudgets.length > 0) {
+        newBudgets = [...budget.dailyBudgets];
+      } else {
+        const spendableTotal = budget.total - (budget.savingsGoal || 0);
+        const count = days > 0 ? days : 1;
+        newBudgets = Array(count).fill(spendableTotal / count);
+      }
+    } else if (isWeekly) {
+      if (budget.weeklyBudgets && budget.weeklyBudgets.length > 0) {
+        newBudgets = [...budget.weeklyBudgets];
+      } else {
+        const spendableTotal = budget.total - (budget.savingsGoal || 0);
+        const count = weeks > 0 ? weeks : 1;
+        newBudgets = Array(count).fill(spendableTotal / count);
+      }
+    }
+
+    // 2. Calculate Overspending & Deductions
+    const getIndex = (dateStr) => {
+      const date = new Date(dateStr);
+      const start = new Date(today);
+      start.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+      const diffTime = date.getTime() - start.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (isDaily) return diffDays;
+      if (isWeekly) return Math.floor(diffDays / 7);
+      return -1;
+    };
+
+    const expensesByIndex = {};
+    expenses.forEach((exp) => {
+      const idx = getIndex(exp.date);
+      if (idx >= 0 && idx < newBudgets.length) {
+        expensesByIndex[idx] = (expensesByIndex[idx] || 0) + exp.amount;
+      }
+    });
+
+    let currentOverspendDetected = false;
+    let currentOverspendAmount = 0;
+
+    for (let i = 0; i < newBudgets.length; i++) {
+      const budgetForPeriod = newBudgets[i];
+      const expensesForPeriod = expensesByIndex[i] || 0;
+
+      if (expensesForPeriod > budgetForPeriod) {
+        const overspent = expensesForPeriod - budgetForPeriod;
+
+        const currentIndex = isDaily ? currentDay - 1 : currentWeek - 1;
+        if (i === currentIndex) {
+          currentOverspendDetected = true;
+          currentOverspendAmount = overspent;
+        }
+
+        const remainingPeriods = newBudgets.length - (i + 1);
+        if (remainingPeriods > 0) {
+          const deduction = overspent / remainingPeriods;
+          for (let j = i + 1; j < newBudgets.length; j++) {
+            newBudgets[j] = Math.max(0, newBudgets[j] - deduction);
+          }
         }
       }
+    }
 
-      setAdjustedBudgets(newAdjustedBudgets);
+    setAdjustedBudgets(newBudgets);
+
+    if (currentOverspendDetected && expenses.length > lastProcessedExpenseCount) {
+        Alert.alert(
+          "Budget Overspent",
+          `You've overspent by ${budget.currency?.symbol || '$'}${currentOverspendAmount.toFixed(2)}. This will be deducted from your future budgets.`
+        );
     }
     setLastProcessedExpenseCount(expenses.length);
   }, [
     expenses,
-    budgetDetails.overspentAmount,
-    budgetDetails.isDaily,
-    budgetDetails.isWeekly,
-    budgetDetails.daysLeft,
-    budgetDetails.weeksLeft, budgetDetails.currency,
     budget,
+    today.toDateString(),
     currentDay,
     currentWeek,
-    adjustedBudgets,
-    lastProcessedExpenseCount,
   ]);
 
   const handleNextWeek = () => currentWeek < budgetDetails.weeksLeft && setCurrentWeek(currentWeek + 1);
