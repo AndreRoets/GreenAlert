@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ActivityIndicator, View, StyleSheet, TouchableOpacity, Text, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { CommonActions } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -19,7 +18,6 @@ import DisposableDashboardScreen from '../screens/DisposableDashboardScreen';
 import { loadFromStorage, saveToStorage } from '../services/storage';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import UserProfileDrawer from '../screens/UserProfileDrawer';
-import { registerForPushNotificationsAsync } from '../services/notificationService';
 import { useNotificationTest } from '../contexts/NotificationTestContext';
 import { useBudget } from '../contexts/BudgetContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -59,62 +57,6 @@ export default function AppNavigator() {
   }, [testNotification]);
 
   useEffect(() => {
-    // --- TESTING: SCHEDULE NOTIFICATION EVERY 2 MINUTES ---
-    const interval = setInterval(async () => {
-      const details = budgetDetailsRef.current;
-      if (details) {
-        const status = details.status || 'green';
-        const amount = details.amount !== undefined ? details.amount.toFixed(2) : '0.00';
-        const symbol = details.currency?.symbol || '$';
-
-        let title = "Budget Status Update";
-        let body = `Your budget is ${status}. Remaining: ${symbol}${amount}`;
-
-        if (status === 'red') {
-          title = "Budget Alert 🚨";
-          body = `You are over budget! Remaining: ${symbol}${amount}`;
-        } else if (status === 'yellow') {
-          title = "Budget Warning ⚠️";
-          body = `You are getting close to your limit. Remaining: ${symbol}${amount}`;
-        } else {
-          title = "Budget Update ✅";
-          body = `You are on track! Remaining: ${symbol}${amount}`;
-        }
-
-        await Notifications.scheduleNotificationAsync({
-          content: { title, body, data: { title, body } },
-          trigger: null,
-        });
-      }
-    }, 120000); // 2 minutes
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // --- REAL NOTIFICATION LISTENER ---
-    // This will work correctly in a development build or standalone app.
-    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
-      const { title, body } = notification.request.content;
-      console.log('Notification received in foreground listener:', notification); // Add this line
-      Alert.alert(title, body, [{ text: 'OK' }]);
-    });
-
-    // Listener for when a user taps on a notification
-    const backgroundSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      // Here you could add logic to navigate to a specific screen if needed
-      const { title, body } = response.notification.request.content;
-      Alert.alert(title, body, [{ text: 'OK' }]);
-    });
-
-    return () => {
-      foregroundSubscription.remove();
-      backgroundSubscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    registerForPushNotificationsAsync();
     const checkInitialRoute = async () => {
       const session = await loadFromStorage('userSession');
       const hasCompletedOnboarding = await loadFromStorage('hasCompletedOnboarding');

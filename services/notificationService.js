@@ -1,5 +1,3 @@
-import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
 
 const messages = {
   green: [
@@ -46,29 +44,6 @@ const titles = {
     red: "🔴 Be honest with yourself",
 };
 
-export async function registerForPushNotificationsAsync() {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') {
-    console.log('Failed to get push token for push notification!');
-    return false;
-  }
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  }
-  return true;
-}
-
 export const getRandomMessage = (status) => {
   const statusMessages = messages[status];
   if (!statusMessages || statusMessages.length === 0) return { title: "Budget Update", body: "Check your budget." };
@@ -77,22 +52,4 @@ export const getRandomMessage = (status) => {
       title: titles[status],
       body: statusMessages[randomIndex]
   };
-};
-
-export const scheduleBudgetNotifications = async (status) => {
-    // First, cancel any pending notifications to avoid duplicates or outdated messages
-    await Notifications.cancelAllScheduledNotificationsAsync();
-
-    // Schedule 2 notifications for the next 8 hours
-    for (let i = 0; i < 2; i++) {
-        const { title, body } = getRandomMessage(status);
-        // Random time between 1 hour and 8 hours from now
-        const randomSeconds = 3600 + Math.random() * (8 * 3600 - 3600);
-
-        await Notifications.scheduleNotificationAsync({
-            content: { title, body },
-            trigger: { seconds: randomSeconds },
-        });
-    }
-    console.log(`Scheduled 2 notifications for status: ${status}`);
 };
