@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActivityIndicator, View, StyleSheet, TouchableOpacity, Text, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
@@ -21,6 +21,7 @@ import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import UserProfileDrawer from '../screens/UserProfileDrawer';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
 import { useNotificationTest } from '../contexts/NotificationTestContext';
+import { useBudget } from '../contexts/BudgetContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Stack = createStackNavigator();
@@ -40,6 +41,12 @@ export default function AppNavigator() {
   const [isProfileDrawerVisible, setProfileDrawerVisible] = useState(false);
   const { testNotification } = useNotificationTest();
   const { theme } = useTheme();
+  const { budgetDetails } = useBudget();
+  const budgetDetailsRef = useRef(budgetDetails);
+
+  useEffect(() => {
+    budgetDetailsRef.current = budgetDetails;
+  }, [budgetDetails]);
 
   useEffect(() => {
     // --- WORKAROUND FOR EXPO GO ---
@@ -50,6 +57,39 @@ export default function AppNavigator() {
       Alert.alert(title, body, [{ text: 'OK' }]);
     }
   }, [testNotification]);
+
+  useEffect(() => {
+    // --- TESTING: SCHEDULE NOTIFICATION EVERY 2 MINUTES ---
+    const interval = setInterval(async () => {
+      const details = budgetDetailsRef.current;
+      if (details) {
+        const status = details.status || 'green';
+        const amount = details.amount !== undefined ? details.amount.toFixed(2) : '0.00';
+        const symbol = details.currency?.symbol || '$';
+
+        let title = "Budget Status Update";
+        let body = `Your budget is ${status}. Remaining: ${symbol}${amount}`;
+
+        if (status === 'red') {
+          title = "Budget Alert 🚨";
+          body = `You are over budget! Remaining: ${symbol}${amount}`;
+        } else if (status === 'yellow') {
+          title = "Budget Warning ⚠️";
+          body = `You are getting close to your limit. Remaining: ${symbol}${amount}`;
+        } else {
+          title = "Budget Update ✅";
+          body = `You are on track! Remaining: ${symbol}${amount}`;
+        }
+
+        await Notifications.scheduleNotificationAsync({
+          content: { title, body, data: { title, body } },
+          trigger: null,
+        });
+      }
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // --- REAL NOTIFICATION LISTENER ---
@@ -63,7 +103,8 @@ export default function AppNavigator() {
     // Listener for when a user taps on a notification
     const backgroundSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       // Here you could add logic to navigate to a specific screen if needed
-      console.log('Notification tapped!', response);
+      const { title, body } = response.notification.request.content;
+      Alert.alert(title, body, [{ text: 'OK' }]);
     });
 
     return () => {
