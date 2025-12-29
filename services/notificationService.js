@@ -1,3 +1,32 @@
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+export const configureNotifications = async () => {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  return finalStatus === 'granted';
+};
 
 const messages = {
   green: [
@@ -54,9 +83,23 @@ export const getRandomMessage = (status) => {
   };
 };
 
-export const scheduleBudgetNotifications = (status) => {
+export const scheduleBudgetNotifications = async (status) => {
   const message = getRandomMessage(status);
-  // TODO: Integrate with your notification library (e.g., Expo Notifications, Firebase)
+  
+  await Notifications.cancelAllScheduledNotificationsAsync();
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: message.title,
+      body: message.body,
+      sound: true,
+    },
+    trigger: {
+      seconds: 60,
+      repeats: true,
+    },
+  });
+
   console.log("Notification scheduled:", message);
   return message;
 };

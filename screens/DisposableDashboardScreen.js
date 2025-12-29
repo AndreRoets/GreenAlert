@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadFromStorage } from '../services/storage';
-import { scheduleBudgetNotifications } from '../services/notificationService';
+import { scheduleBudgetNotifications, configureNotifications } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -105,6 +105,10 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   useEffect(() => {
     initializeBudget();
   }, [initializeBudget]);
+
+  useEffect(() => {
+    configureNotifications();
+  }, []);
 
   const budgetDetails = useMemo(() => {
     if (!budget) {
