@@ -13,7 +13,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadFromStorage } from '../services/storage';
-import { scheduleBudgetNotifications, configureNotifications } from '../services/notificationService';
 import { useBudget } from '../contexts/BudgetContext';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -63,15 +62,17 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   const [isCalculatorVisible, setCalculatorVisible] = useState(false);
   const [calculatorAmount, setCalculatorAmount] = useState('');
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
-  const [lastWarningDate, setLastWarningDate] = useState(null);
   const [newExpense, setNewExpense] = useState({ amount: '', description: '', necessary: false, category: '' });
   const [isLoading, setIsLoading] = useState(true);
   const { setBudgetDetails } = useBudget();
   const [categories, setCategories] = useState([]);
   const today = useCurrentDate();
   const prevBudgetDetailsRef = useRef();
+  const latestBudgetDetailsRef = useRef();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [customAlertConfig, setCustomAlertConfig] = useState({ title: '', message: '', statusColor: COLORS.success });
 
   const initializeBudget = useCallback(async () => {
     console.log("Initializing budget...");
@@ -105,10 +106,6 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   useEffect(() => {
     initializeBudget();
   }, [initializeBudget]);
-
-  useEffect(() => {
-    configureNotifications();
-  }, []);
 
   const budgetDetails = useMemo(() => {
     if (!budget) {
@@ -378,30 +375,84 @@ export default function DisposableDashboardScreen({ route, navigation }) {
   }, [budgetDetails, setBudgetDetails]);
 
   useEffect(() => {
-    if (budgetDetails.status) {
-      scheduleBudgetNotifications(budgetDetails.status);
-    }
-  }, [budgetDetails.status]);
+    latestBudgetDetailsRef.current = budgetDetails;
+  }, [budgetDetails]);
 
   useEffect(() => {
-    if (budgetDetails.statusColor === COLORS.warning) {
-      const today = new Date().toDateString();
-      const periodIdentifier = budgetDetails.isDaily ? `${today}-day-${currentDay}` : `${today}-week-${currentWeek}`;
+    if (isLoading || !budget) return;
 
-      if (lastWarningDate !== periodIdentifier) {
-        Alert.alert(
-          "Budget Warning",
-          "You're getting close to your limit for this period. Be mindful of your next expenses!",
-          [{ text: "OK" }]
-        );
-        setLastWarningDate(periodIdentifier);
+    let reminderInterval;
+
+    const triggerAlert = () => {
+      const currentDetails = latestBudgetDetailsRef.current;
+      if (!currentDetails) return;
+
+      const greenMessages = [
+        "You're managing your money wisely — keep it going!",
+        "Great control! Your spending is right where it should be.",
+        "Nice work staying within your budget.",
+        "You're in the safe zone. Smart financial choices!",
+        "Your budget looks healthy this period.",
+        "You're spending with intention — well done.",
+        "Everything is balanced so far. Keep it steady.",
+        "Your finances are behaving nicely this month.",
+        "Strong discipline! You're still under budget.",
+        "You're building good money habits — keep it up."
+      ];
+
+      const yellowMessages = [
+        "You're approaching your limit — slow things down.",
+        "Careful! Your budget is starting to feel the pressure.",
+        "You're close to the edge — think before spending.",
+        "Just a heads-up: spending is adding up quickly.",
+        "You're nearly at your limit for this period.",
+        "A little caution now can save you later.",
+        "Your budget is tightening — plan your next expense.",
+        "Almost there — only spend on what really matters.",
+        "You're entering the danger zone. Stay mindful.",
+        "This is a good time to pause and review expenses."
+      ];
+
+      const redMessages = [
+        "You've gone over budget — time to hit the brakes.",
+        "Spending has exceeded your limit this period.",
+        "Your budget is officially stretched too far.",
+        "You've crossed your spending limit — review needed.",
+        "This period is over budget. Let's regroup.",
+        "Time to pause spending and reassess priorities.",
+        "Your budget needs attention — expenses are too high.",
+        "Overspending detected. Adjustments recommended.",
+        "You've exceeded your limit — recovery mode on.",
+        "This period needs tighter control moving forward."
+      ];
+
+      const getRandomMessage = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+      let title = "Budget Status";
+      let message = getRandomMessage(greenMessages);
+      let statusColor = COLORS.success;
+
+      if (currentDetails.status === 'red') {
+        title = "Budget Alert";
+        message = getRandomMessage(redMessages);
+        statusColor = COLORS.error;
+      } else if (currentDetails.status === 'yellow') {
+        title = "Budget Warning";
+        message = getRandomMessage(yellowMessages);
+        statusColor = COLORS.warning;
       }
-    }
-  }, [
-    budgetDetails.statusColor,
-    lastWarningDate,
-    budgetDetails.isDaily, currentDay, currentWeek
-  ]);
+
+      setCustomAlertConfig({ title, message, statusColor });
+      setCustomAlertVisible(true);
+    };
+
+    triggerAlert();
+    reminderInterval = setInterval(triggerAlert, 3600000);
+
+    return () => {
+      if (reminderInterval) clearInterval(reminderInterval);
+    };
+  }, [isLoading, budget]);
 
   useEffect(() => {
     if (!budget) return;
@@ -753,6 +804,38 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       </Modal>
 
       <Modal
+        animationType="fade"
+        transparent={true}
+        visible={customAlertVisible}
+        onRequestClose={() => setCustomAlertVisible(false)}
+      >
+        <View style={styles.alertOverlay}>
+          <View style={[styles.alertContent, { backgroundColor: theme.card }]}>
+            <View style={{
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              backgroundColor: (customAlertConfig.statusColor || COLORS.success) + '20',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 15
+            }}>
+              <Ionicons name={customAlertConfig.statusColor === COLORS.success ? "checkmark-circle" : "alert-circle"} size={32} color={customAlertConfig.statusColor || COLORS.success} />
+            </View>
+            <AppText style={[styles.alertTitle, { color: customAlertConfig.statusColor || theme.text }]}>{customAlertConfig.title}</AppText>
+            <AppText style={[styles.alertMessage, { color: theme.textSecondary }]}>
+              {customAlertConfig.message}
+            </AppText>
+            <AppButton
+              title="OK"
+              onPress={() => setCustomAlertVisible(false)}
+              style={{ width: '100%', backgroundColor: customAlertConfig.statusColor || COLORS.primary }}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         animationType="slide"
         transparent={true}
         visible={isCalculatorVisible}
@@ -967,5 +1050,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  alertOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: SIZES.padding,
+  },
+  alertContent: {
+    padding: SIZES.padding,
+    borderRadius: SIZES.radius,
+    alignItems: 'center',
+    width: '100%',
+  },
+  alertTitle: {
+    ...FONTS.h3,
+    marginBottom: SIZES.base,
+    textAlign: 'center',
+  },
+  alertMessage: {
+    ...FONTS.body3,
+    textAlign: 'center',
+    marginBottom: SIZES.padding,
   },
 });
