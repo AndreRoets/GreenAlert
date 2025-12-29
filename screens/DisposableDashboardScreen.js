@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { loadFromStorage } from '../services/storage';
+import { loadFromStorage, saveToStorage } from '../services/storage';
 import { useBudget } from '../contexts/BudgetContext';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -378,14 +378,24 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     latestBudgetDetailsRef.current = budgetDetails;
   }, [budgetDetails]);
 
+  const handleCloseAlert = async () => {
+    setCustomAlertVisible(false);
+    await saveToStorage('lastAlertTimestamp', Date.now().toString());
+  };
+
   useEffect(() => {
     if (isLoading || !budget) return;
 
-    let reminderInterval;
+    const checkAlert = async () => {
+      if (customAlertVisible) return;
 
-    const triggerAlert = () => {
-      const currentDetails = latestBudgetDetailsRef.current;
-      if (!currentDetails) return;
+      const lastTimestampStr = await loadFromStorage('lastAlertTimestamp');
+      const lastTimestamp = lastTimestampStr ? parseInt(lastTimestampStr, 10) : 0;
+      const now = Date.now();
+
+      if (now - lastTimestamp >= 3600000) {
+        const currentDetails = latestBudgetDetailsRef.current;
+        if (!currentDetails) return;
 
       const greenMessages = [
         "You're managing your money wisely — keep it going!",
@@ -432,27 +442,28 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       let message = getRandomMessage(greenMessages);
       let statusColor = COLORS.success;
 
-      if (currentDetails.status === 'red') {
+        if (currentDetails.status === 'red') {
         title = "Budget Alert";
         message = getRandomMessage(redMessages);
         statusColor = COLORS.error;
-      } else if (currentDetails.status === 'yellow') {
+        } else if (currentDetails.status === 'yellow') {
         title = "Budget Warning";
         message = getRandomMessage(yellowMessages);
         statusColor = COLORS.warning;
-      }
+        }
 
       setCustomAlertConfig({ title, message, statusColor });
       setCustomAlertVisible(true);
+      }
     };
 
-    triggerAlert();
-    reminderInterval = setInterval(triggerAlert, 3600000);
+    checkAlert();
+    const reminderInterval = setInterval(checkAlert, 60000);
 
     return () => {
-      if (reminderInterval) clearInterval(reminderInterval);
+      clearInterval(reminderInterval);
     };
-  }, [isLoading, budget]);
+  }, [isLoading, budget, customAlertVisible]);
 
   useEffect(() => {
     if (!budget) return;
@@ -807,7 +818,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         animationType="fade"
         transparent={true}
         visible={customAlertVisible}
-        onRequestClose={() => setCustomAlertVisible(false)}
+        onRequestClose={handleCloseAlert}
       >
         <View style={styles.alertOverlay}>
           <View style={[styles.alertContent, { backgroundColor: theme.card }]}>
@@ -828,7 +839,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
             </AppText>
             <AppButton
               title="OK"
-              onPress={() => setCustomAlertVisible(false)}
+              onPress={handleCloseAlert}
               style={{ width: '100%', backgroundColor: customAlertConfig.statusColor || COLORS.primary }}
             />
           </View>

@@ -3,9 +3,6 @@ import { Modal, View, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { loadFromStorage } from '../services/storage';
-import { useNotificationTest } from '../contexts/NotificationTestContext';
-import { getRandomMessage } from '../services/notificationService';
-import { useBudget } from '../contexts/BudgetContext';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import AppText from '../components/AppText';
@@ -15,8 +12,6 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
   const navigation = useNavigation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { triggerTestNotification } = useNotificationTest();
-  const { budgetDetails } = useBudget();
   const { theme, toggleTheme, themeMode } = useTheme();
 
   useEffect(() => {
@@ -38,21 +33,6 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
 
     fetchUserData();
   }, [isVisible]);
-
-  const handleTestNotification = () => {
-    // Use the status from the shared budget context. Default to 'green' if not available.
-    const currentStatus = budgetDetails?.status || 'green';
-
-    console.log(`Triggering test pop-up for current status: '${currentStatus}'...`);
-    const message = getRandomMessage(currentStatus);
-    triggerTestNotification(message);
-
-    // Give feedback that the button was pressed
-    Alert.alert("Test Notification Sent", `A test pop-up for your current '${currentStatus}' status has been triggered.`);
-
-    // We don't close the drawer, so the user can see the pop-up
-    // onClose(); 
-  };
 
   const handleGoToSetup = async () => {
     onClose(); // Close the drawer first
@@ -113,7 +93,6 @@ export default function UserProfileDrawer({ isVisible, onClose }) {
         </View>
 
         <AppButton title={`Switch to ${themeMode === 'light' ? 'Dark' : 'Light'} Mode`} onPress={toggleTheme} variant="secondary" />
-        <AppButton title="Test Status Pop-up" onPress={handleTestNotification} />
         <AppButton title="Go Back to Setup" onPress={handleGoToSetup} variant="secondary" />
       </>
     );
