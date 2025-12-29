@@ -204,8 +204,8 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       weekStartDate.setDate(today.getDate() + (currentWeek - 1) * 7);
       weekStartDate.setHours(0, 0, 0, 0);
 
-      const weekEndDate = new Date(today);
-      weekEndDate.setDate(weekStartDate.getDate() + 6);
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekEndDate.getDate() + 6);
       weekEndDate.setHours(23, 59, 59, 999);
 
       const oneOffSpendsForWeek = expenses.filter(exp => {
@@ -505,6 +505,8 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     let expenseDate = new Date(today);
     if (budget.viewPreference === 'daily') {
       expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
+    } else if (budget.viewPreference === 'weekly') {
+      expenseDate.setDate(expenseDate.getDate() + (currentWeek - 1) * 7);
     }
     setExpenses([...expenses, { id: Date.now(), amount, description: newExpense.description, necessary: newExpense.necessary, category: newExpense.category, date: expenseDate.toISOString() }]);
     setNewExpense({ amount: '', description: '', necessary: false, category: categories[0] || '' });

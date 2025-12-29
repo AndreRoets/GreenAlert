@@ -53,3 +53,10 @@ export const getRandomMessage = (status) => {
       body: statusMessages[randomIndex]
   };
 };
+
+export const scheduleBudgetNotifications = (status) => {
+  const message = getRandomMessage(status);
+  // TODO: Integrate with your notification library (e.g., Expo Notifications, Firebase)
+  console.log("Notification scheduled:", message);
+  return message;
+};
