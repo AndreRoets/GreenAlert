@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -10,6 +11,15 @@ import { useTheme } from '../contexts/ThemeContext';
 const defaultDisposableCategories = [
   'Food & Drinks', 'Transport', 'Personal & Lifestyle', 'Social & Gifts', 'Miscellaneous'
 ];
+
+const getCategoryIcon = (category) => {
+  const map = {
+    'Food & Drinks': 'fast-food-outline', 'Transport': 'car-outline',
+    'Personal & Lifestyle': 'person-outline', 'Social & Gifts': 'gift-outline',
+    'Miscellaneous': 'apps-outline'
+  };
+  return map[category] || 'pricetag-outline';
+};
 
 export default function DisposableCategorySetupScreen({ route, navigation }) {
   const { isGuest, currency, budget, activeCategories: passedCategories } = route.params;
@@ -67,8 +77,11 @@ export default function DisposableCategorySetupScreen({ route, navigation }) {
   };
 
   const renderCategory = (category) => (
-    <View key={category} style={styles.categoryRow}>
-      <AppText style={styles.categoryText}>{category}</AppText>
+    <View key={category} style={[styles.categoryRow, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View style={styles.categoryInfo}>
+        <Ionicons name={getCategoryIcon(category)} size={22} color={COLORS.primary} style={{ marginRight: 15 }} />
+        <AppText style={styles.categoryText}>{category}</AppText>
+      </View>
       <Switch
         trackColor={{ false: theme.border, true: COLORS.primary }}
         thumbColor={Platform.OS === 'android' ? COLORS.primary : ''}
@@ -121,7 +134,14 @@ const styles = StyleSheet.create({
   customCategoryInput: { flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0, marginRight: -1 },
   addButton: { backgroundColor: COLORS.primary, justifyContent: 'center', paddingHorizontal: 20, borderTopRightRadius: SIZES.radius, borderBottomRightRadius: SIZES.radius, height: 55 },
   addButtonText: { ...FONTS.h4, color: 'white', fontSize: 16 },
-  categoryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15 },
+  categoryRow: { 
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15,
+    marginBottom: 10, borderRadius: SIZES.radius, borderWidth: 1
+  },
+  categoryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   categoryText: { ...FONTS.body3 },
   footer: { paddingTop: SIZES.base * 2, borderTopWidth: 1 },
 });

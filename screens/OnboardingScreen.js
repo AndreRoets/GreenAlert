@@ -49,11 +49,11 @@ export default function OnboardingScreen({ navigation, route }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingBottom: insets.bottom }]}>
       <AppText style={styles.header}>Welcome to GreenAlert</AppText>
-      <AppText style={styles.subHeader}>
+      <AppText style={[styles.subHeader, { color: COLORS.primary }]}>
         Brutally honest, but motivating.
       </AppText>
       <AppText style={styles.body}>
-        Let’s get real about your spending. How do you want to track your budget?
+        Let’s get real about your spending.{"\n"}How do you want to track your budget?
       </AppText>
 
       <View style={styles.buttonContainer}>
@@ -83,11 +83,13 @@ const styles = StyleSheet.create({
     ...FONTS.h2,
     textAlign: 'center',
     marginBottom: SIZES.base,
+    fontSize: 28,
   },
   subHeader: {
     ...FONTS.h4,
     textAlign: 'center',
     marginBottom: SIZES.padding * 2,
+    fontWeight: 'bold',
   },
   body: {
     ...FONTS.body3,

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   View,
-  StyleSheet, TouchableOpacity,
+  StyleSheet, TouchableOpacity, Animated,
   ScrollView, 
   Modal,
   KeyboardAvoidingView,
@@ -22,6 +22,35 @@ import AppButton from '../components/AppButton';
 import AppCard from './AppCard';
 import useCurrentDate from '../hooks/useCurrentDate';
 import { useTheme } from '../contexts/ThemeContext';
+
+const ProgressBar = ({ total, current, color }) => {
+  // current is "remaining", so spent is total - current
+  const spent = Math.max(0, total - current);
+  const percentage = total > 0 ? Math.min(Math.max((spent / total) * 100, 0), 100) : 100;
+  
+  return (
+    <View style={{ height: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 5, width: '100%', overflow: 'hidden', marginVertical: 15 }}>
+       <View style={{ height: '100%', width: `${percentage}%`, backgroundColor: color, borderRadius: 5 }} />
+    </View>
+  )
+};
+
+const getCategoryIcon = (category) => {
+  const map = {
+    'Food & Drinks': 'fast-food',
+    'Transport': 'car',
+    'Personal & Lifestyle': 'person',
+    'Social & Gifts': 'gift',
+    'Miscellaneous': 'apps',
+    'Housing': 'home',
+    'Bills & Subscriptions': 'receipt',
+    'Health': 'medkit',
+    'Education': 'school',
+    'Family & Dependents': 'people',
+    'Financial': 'cash',
+  };
+  return map[category] || 'pricetag';
+};
 
 export default function DisposableDashboardScreen({ route, navigation }) {
   const [budget, setBudget] = useState(null);
@@ -181,6 +210,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
       return {
         amount: finalFunMoney,
+        totalPeriodBudget: dayFunMoneyBudget,
         label: 'Daily Budget',
         daysLeft: daysLeft,
         isWeekly: false,
@@ -256,6 +286,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
       return {
         amount: finalFunMoney,
+        totalPeriodBudget: weekFunMoneyBudget,
         label: 'Weekly Budget',
         weeksLeft: weeksLeft,
         isWeekly: true,
@@ -273,6 +304,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
     return {
       amount: budget.total,
+      totalPeriodBudget: budget.total,
       label: 'Total Budget',
       isWeekly: false,
       isDaily: false,
@@ -496,6 +528,18 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     return `${formatDate(weekStartDate)} - ${formatDate(weekEndDate)}`;
   };
 
+  const getMotivationalText = () => {
+    const { amount, totalPeriodBudget } = budgetDetails;
+    if (totalPeriodBudget === 0) return "No budget set.";
+    const percentageLeft = (amount / totalPeriodBudget) * 100;
+
+    if (amount < 0) return "Over budget. Time to stop spending.";
+    if (percentageLeft < 20) return "Careful — nearing today’s limit.";
+    if (percentageLeft < 50) return "You're managing well, keep it up.";
+    if (percentageLeft >= 50) return "You’re on track 🎉";
+    return "Stay in the green.";
+  };
+
   const handleAddExpense = () => {
     const amount = parseFloat(newExpense.amount);
     if (!amount || amount <= 0 || !newExpense.description || !newExpense.category) {
@@ -574,8 +618,11 @@ export default function DisposableDashboardScreen({ route, navigation }) {
             <Ionicons name="calculator-outline" size={20} color={theme.text} />
           </TouchableOpacity>
         </View>
+        
         <AppText style={[styles.amount, { color: budgetDetails.statusColor }]}>{budgetDetails.currency.symbol}{budgetDetails.amount.toFixed(2)}</AppText>
-        <AppText style={styles.subAmount}>Remaining</AppText>
+        <AppText style={styles.subAmount}>{getMotivationalText()}</AppText>
+
+        <ProgressBar total={budgetDetails.totalPeriodBudget} current={budgetDetails.amount} color={budgetDetails.statusColor} />
 
         {budget.savingsGoal > 0 && (
           <View style={[styles.savingsDisplay, { borderTopColor: theme.border }]}>
@@ -615,6 +662,9 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
         {budgetDetails.recurringSpendsForView.map((spend, index) => (
           <TouchableOpacity key={`rec-${index}`} style={[styles.expenseRow, { borderBottomColor: theme.border }, styles.unconfirmedExpenseRow]} onPress={() => handleConfirmRecurringSpend(spend)}>
+            <View style={[styles.iconContainer, { backgroundColor: 'rgba(0,0,0,0.05)' }]}>
+               <Ionicons name={getCategoryIcon(spend.category)} size={20} color={theme.textSecondary} />
+            </View>
             <View style={styles.expenseDetails}>
               <AppText style={styles.expenseDescription}>{spend.description} (Tap to confirm)</AppText>
               <AppText style={styles.unconfirmedExpenseAmount}>-{budgetDetails.currency.symbol}{spend.amount.toFixed(2)}</AppText>
@@ -624,6 +674,9 @@ export default function DisposableDashboardScreen({ route, navigation }) {
 
         {budgetDetails.oneOffSpendsForView.map((expense) => (
           <View key={expense.id} style={[styles.expenseRow, { borderBottomColor: theme.border }, !expense.necessary && styles.unnecessaryExpenseRow]}>
+            <View style={[styles.iconContainer, { backgroundColor: expense.necessary ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)' }]}>
+               <Ionicons name={getCategoryIcon(expense.category)} size={20} color={expense.necessary ? COLORS.success : COLORS.error} />
+            </View>
             <View style={[styles.expenseDetails, {flex: 1}]}>
               <AppText style={styles.expenseDescription}>{expense.description}</AppText>
               <AppText style={styles.expenseAmount}>-{budgetDetails.currency.symbol}{expense.amount.toFixed(2)}</AppText>
@@ -810,7 +863,7 @@ const styles = StyleSheet.create({
   },
   savingsLabel: { ...FONTS.body3 },
   savingsAmount: { ...FONTS.h3 },
-  label: { ...FONTS.h4 },
+  label: { ...FONTS.h4, opacity: 0.7 },
   amount: { ...FONTS.h1, fontSize: 64, marginVertical: SIZES.base },
   weekNavigator: {
     flexDirection: 'row',
@@ -822,7 +875,7 @@ const styles = StyleSheet.create({
   arrow: { ...FONTS.h2, paddingHorizontal: SIZES.base },
   arrowDisabled: { opacity: 0.3 },
   weekText: { ...FONTS.h4 },
-  subAmount: { ...FONTS.body3, marginBottom: SIZES.base },
+  subAmount: { ...FONTS.body3, marginBottom: SIZES.base, textAlign: 'center' },
   expenseList: { flex: 1, width: '100%' },
   expenseHeader: { ...FONTS.h4, marginBottom: SIZES.base * 2 },
   expenseRow: {
@@ -839,7 +892,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  expenseDescription: { ...FONTS.body3, flex: 1 },
+  expenseDescription: { ...FONTS.body3, flex: 1, marginLeft: 10 },
   expenseAmount: { ...FONTS.body3, fontWeight: 'bold', color: COLORS.error, marginLeft: SIZES.base },
   unconfirmedExpenseAmount: { ...FONTS.body3, fontWeight: 'bold', marginLeft: SIZES.base },
   removeExpenseButton: {
@@ -903,5 +956,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 20,
     marginTop: 10,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

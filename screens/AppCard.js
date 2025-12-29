@@ -4,10 +4,12 @@ import { COLORS, SIZES } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 const AppCard = ({ children, style }) => {
-  const { theme } = useTheme();
+  const { theme, themeMode } = useTheme();
 
   const cardStyle = {
     backgroundColor: theme.card,
+    borderWidth: themeMode === 'dark' ? 1 : 0,
+    borderColor: theme.border,
     ...styles.card,
     ...style,
   };
@@ -17,8 +19,8 @@ const AppCard = ({ children, style }) => {
     ios: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 12,
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
     },
     android: {
       elevation: 5,
@@ -30,7 +32,7 @@ const AppCard = ({ children, style }) => {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: SIZES.radius * 1.5,
+    borderRadius: SIZES.radius * 2,
     padding: SIZES.padding,
     width: '100%',
   },

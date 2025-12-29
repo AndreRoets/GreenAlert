@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import AppText from '../components/AppText';
@@ -12,6 +13,17 @@ const allCategories = [
   'Health', 'Education', 'Lifestyle & Fun', 'Family & Dependents',
   'Financial', 'Gifts & Donations'
 ];
+
+const getCategoryIcon = (category) => {
+  const map = {
+    'Housing': 'home-outline', 'Transport': 'car-outline', 'Food': 'fast-food-outline',
+    'Bills & Subscriptions': 'receipt-outline', 'Personal': 'person-outline',
+    'Health': 'medkit-outline', 'Education': 'school-outline',
+    'Lifestyle & Fun': 'happy-outline', 'Family & Dependents': 'people-outline',
+    'Financial': 'cash-outline', 'Gifts & Donations': 'gift-outline'
+  };
+  return map[category] || 'pricetag-outline';
+};
 
 export default function CategorySetupScreen({ route, navigation }) {
   const { budgetPreference, isGuest, currency, existingBudget, existingCategories } = route.params;
@@ -74,8 +86,11 @@ export default function CategorySetupScreen({ route, navigation }) {
   };
 
   const renderCategory = (category) => (
-    <View key={category} style={styles.categoryRow}>
-      <AppText style={styles.categoryText}>{category}</AppText>
+    <View key={category} style={[styles.categoryRow, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View style={styles.categoryInfo}>
+        <Ionicons name={getCategoryIcon(category)} size={22} color={COLORS.primary} style={{ marginRight: 15 }} />
+        <AppText style={styles.categoryText}>{category}</AppText>
+      </View>
       <Switch
         trackColor={{ false: theme.border, true: COLORS.primary }}
         thumbColor={Platform.OS === 'android' ? COLORS.primary : ''}
@@ -154,7 +169,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+  },
+  categoryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   categoryText: {
     ...FONTS.body3,

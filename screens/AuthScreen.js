@@ -85,8 +85,10 @@ export default function AuthScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <AppText style={styles.header}>GreenAlert</AppText>
-      <AppText style={styles.subHeader}>Welcome!</AppText>
+      <View style={styles.logoContainer}>
+        <AppText style={styles.header}>GreenAlert</AppText>
+        <AppText style={styles.subHeader}>Master your money, find your peace.</AppText>
+      </View>
 
       <View style={styles.inputGroup}>
         <AppInput
@@ -113,12 +115,14 @@ export default function AuthScreen({ navigation }) {
         onPress={() => setCurrencyModalVisible(true)}
       >
         <AppText style={styles.currencyButtonText}>
-          Currency: {currency.code} ({currency.symbol})
+          {currency.code} ({currency.symbol})
         </AppText>
       </TouchableOpacity>
 
       <AppButton title="Sign Up" onPress={handleSignUp} />
-      <AppButton title="Continue as Guest" onPress={handleGuest} variant="secondary" />
+      <TouchableOpacity style={styles.guestButton} onPress={handleGuest}>
+         <AppText style={[styles.guestButtonText, { color: theme.textSecondary }]}>Continue as Guest</AppText>
+      </TouchableOpacity>
 
 
       <Modal
@@ -165,20 +169,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SIZES.padding,
   },
-  header: { ...FONTS.h1, marginBottom: SIZES.base },
-  subHeader: { ...FONTS.h3, marginBottom: SIZES.padding * 2 },
+  logoContainer: { alignItems: 'center', marginBottom: SIZES.padding * 3 },
+  header: { ...FONTS.h1, fontSize: 36, marginBottom: SIZES.base, color: COLORS.primary },
+  subHeader: { ...FONTS.body3, textAlign: 'center', opacity: 0.8 },
   inputGroup: { width: '100%', marginBottom: SIZES.padding },
   currencyButton: {
     width: '100%',
     height: 55,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: SIZES.radius,
     marginBottom: SIZES.padding,
+    borderStyle: 'dashed',
   },
   currencyButtonText: {
     fontSize: 16,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
@@ -203,5 +210,13 @@ const styles = StyleSheet.create({
   currencyItemText: {
     ...FONTS.body3,
     textAlign: 'center',
+  },
+  guestButton: {
+    marginTop: SIZES.padding,
+    padding: SIZES.base,
+  },
+  guestButtonText: {
+    ...FONTS.body3,
+    textDecorationLine: 'underline',
   },
 });
