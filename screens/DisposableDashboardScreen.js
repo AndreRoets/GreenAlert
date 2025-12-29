@@ -100,6 +100,12 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       // Set default category for new expenses
       setNewExpense(prev => ({ ...prev, category: initialCategories[0] || '' }));
     }
+
+    const savedExpenses = await loadFromStorage('userExpenses');
+    if (savedExpenses) {
+      setExpenses(savedExpenses);
+    }
+
     setIsLoading(false);
   }, [route.params?.budget, route.params?.categories]);
 
@@ -606,7 +612,7 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     return "Stay in the green.";
   };
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     const amount = parseFloat(newExpense.amount);
     if (!amount || amount <= 0 || !newExpense.description || !newExpense.category) {
       Alert.alert('Invalid Expense', 'Please enter a valid amount, description, and category.');
@@ -618,7 +624,9 @@ export default function DisposableDashboardScreen({ route, navigation }) {
     } else if (budget.viewPreference === 'weekly') {
       expenseDate.setDate(expenseDate.getDate() + (currentWeek - 1) * 7);
     }
-    setExpenses([...expenses, { id: Date.now(), amount, description: newExpense.description, necessary: newExpense.necessary, category: newExpense.category, date: expenseDate.toISOString() }]);
+    const updatedExpenses = [...expenses, { id: Date.now(), amount, description: newExpense.description, necessary: newExpense.necessary, category: newExpense.category, date: expenseDate.toISOString() }];
+    setExpenses(updatedExpenses);
+    await saveToStorage('userExpenses', updatedExpenses);
     setNewExpense({ amount: '', description: '', necessary: false, category: categories[0] || '' });
     setModalVisible(false);
   };
@@ -634,14 +642,18 @@ export default function DisposableDashboardScreen({ route, navigation }) {
         },
         {
           text: "Remove",
-          onPress: () => setExpenses(currentExpenses => currentExpenses.filter(exp => exp.id !== expenseId)),
+          onPress: async () => {
+            const updatedExpenses = expenses.filter(exp => exp.id !== expenseId);
+            setExpenses(updatedExpenses);
+            await saveToStorage('userExpenses', updatedExpenses);
+          },
           style: "destructive"
         }
       ]
     );
   };
 
-  const handleConfirmRecurringSpend = (spendToConfirm) => {
+  const handleConfirmRecurringSpend = async (spendToConfirm) => {
     let expenseDate = new Date(today);
     if (budget.viewPreference === 'daily') {
       expenseDate.setDate(expenseDate.getDate() + currentDay - 1);
@@ -660,7 +672,9 @@ export default function DisposableDashboardScreen({ route, navigation }) {
       recurringSpendId: spendToConfirm.id, // Link back to the original recurring spend
     };
 
-    setExpenses(prevExpenses => [...prevExpenses, newExpense]);
+    const updatedExpenses = [...expenses, newExpense];
+    setExpenses(updatedExpenses);
+    await saveToStorage('userExpenses', updatedExpenses);
     Alert.alert(
       "Expense Confirmed",
       `"${spendToConfirm.description}" has been added to your spends for this period.`
